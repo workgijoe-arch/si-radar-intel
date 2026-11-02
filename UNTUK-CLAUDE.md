@@ -21,12 +21,30 @@ mengganti kerangka, dan jangan "merapikan" kode yang tidak berkaitan.
 **Basis datanya proyek Supabase BARU** (bagian 5). Versi kedua tidak berbagi
 akun, berita, bot Telegram, maupun Edge Function dengan versi pertama.
 
-**Yang tersisa adalah pekerjaan bagian 5–7:** membangun proyek Supabase,
-menyambungkan `web/` ke sana, dan menggelar di Vercel.
+**SUDAH DIGELAR (2 November 2026).** Bagian 5–7 di bawah adalah catatan
+cara membangunnya, bukan pekerjaan yang tersisa:
 
-Periksa dulu apakah folder `produksi/` ada di paket ini (lihat 5B). Bila
-tidak ada, berhenti dan minta pengguna menjalankan `ambil-dari-produksi.ps1`
-lebih dulu. Tanpa isinya, proyek baru tidak bisa dibangun.
+| | |
+|---|---|
+| Situs | https://si-radar-intel.vercel.app (tim Vercel `workgijoe-7117s-projects`, proyek `si-radar-intel`) |
+| Repo | https://github.com/workgijoe-arch/si-radar-intel |
+| Supabase | proyek `diznmklyxkiyqzngbaeu` (org Trans-Siber Pemasyarakatan) |
+
+- Skema dibangun dari katalog produksi Trans-Siber (bukan dari migrasi), lalu
+  33.092 berita dan seluruh data induk disalin. Akun, target Telegram, dan
+  log Trans-Siber sengaja TIDAK disalin.
+- 19 jadwal pg_cron aktif; 11 Edge Function tergelar dari kode yang berjalan
+  di produksi (lebih maju dari repo lama), kecuali `laporan-harian`.
+- Vercel **tidak** tersambung ke GitHub: akun Vercel belum punya login
+  connection GitHub. Gelaran dilakukan dari folder `web/` dengan CLI:
+  `cd web && npx vercel@65.9.0 deploy --prod --scope workgijoe-7117s-projects`.
+  Karena gelaran dari `web/`, `web/vercel.json` terbaca (cek: `/README.md`
+  harus 404).
+
+**Yang masih harus dikerjakan pengguna sendiri:** akun admin pertama
+(Supabase → Authentication → Add user, lalu naikkan perannya di
+`app_users`), dan bot Telegram baru (rahasia Edge Function
+`TELEGRAM_BOT_TOKEN`).
 
 ## 2. Tanyakan ini kepada pengguna sebelum bagian 5
 
