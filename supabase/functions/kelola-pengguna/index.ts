@@ -45,16 +45,6 @@ const PERAN_INTERNAL = [
   'executive_decision_maker',
 ]
 
-/*
-   Dua peran daerah, dibagi menurut cakupan: kantor wilayah memegang seluruh
-   unit di bawahnya, penelaah memegang satu unit.
-
-   Nama peran yang sudah dihapus tidak ada di daftar ini, tetapi tetap diterima
-   sebagai masukan — `bakukanPeran` menerjemahkannya lebih dulu. Penggelaran
-   tidak pernah serentak, dan selama beberapa menit di sekitarnya sebuah tab
-   yang belum dimuat ulang masih akan mengirimkan nama lama. Menolaknya hanya
-   menghasilkan galat yang tidak dipahami siapa pun.
-*/
 const PERAN_WILAYAH = ['kanwil_admin', 'upt_penelaah']
 
 /** Peran yang cakupannya satu unit, dan karena itu wajib menyebut unitnya. */
@@ -85,22 +75,7 @@ function jawab(isi: unknown, status = 200): Response {
   return new Response(JSON.stringify(isi), { status, headers: KEPALA })
 }
 
-/**
- * Merapikan sebuah isian teks.
- *
- * Kata "NULL" yang diketik atau ditempel dianggap ketiadaan nilai, bukan nama.
- * Itu bukan kehati-hatian yang berlebihan: editor tabel Supabase menampilkan
- * sel kosong sebagai `NULL`, dan siapa pun yang menyalin nilai dari sana
- * menyalin empat huruf. Pada 3 September 2026 akun `dimyust` tersimpan dengan
- * `assigned_upt = 'NULL'`, dan policy RLS memperlakukannya sebagai petugas
- * sebuah unit bernama "NULL" — superadmin dengan dasbor kosong, tanpa satu pun
- * galat di mana pun.
- *
- * Penjagaan yang sama ada di sisi peramban pada `kosongkan()` di
- * `web/js/pages/pengguna.js`. Keduanya memang perlu: yang satu menolong petugas
- * lebih awal, yang satu lagi menjaga ketika permintaan datang bukan dari
- * halaman itu.
- */
+/** Merapikan isian teks; kata "NULL" yang tertempel dianggap kosong. */
 function bersih(nilai: unknown): string {
   const t = String(nilai ?? '').replace(/\s+/g, ' ').trim()
   if (['null', 'nil', 'none', '-', '—'].includes(t.toLowerCase())) return ''
@@ -123,8 +98,6 @@ Deno.serve(async (permintaan: Request) => {
     const admin = createClient(urlSupabase, kunciLayanan, {
       auth: { persistSession: false, autoRefreshToken: false },
     })
-
-    /* ------------------------------------------------------ siapa pemohon */
 
     const tajuk = permintaan.headers.get('Authorization') || ''
     const token = tajuk.startsWith('Bearer ') ? tajuk.slice(7) : ''
@@ -154,13 +127,8 @@ Deno.serve(async (permintaan: Request) => {
     const bolehWilayah = peranPemohon === 'kanwil_admin'
 
     if (!bolehSemua && !bolehWilayah) {
-      return jawab({
-        ok: false,
-        pesan: 'Peran Anda tidak berhak menerbitkan akun.',
-      }, 403)
+      return jawab({ ok: false, pesan: 'Peran Anda tidak berhak menerbitkan akun.' }, 403)
     }
-
-    /* --------------------------------------------------------- permintaan */
 
     let badan: Record<string, unknown> = {}
     try { badan = await permintaan.json() } catch { /* ditangani di bawah */ }
@@ -176,13 +144,10 @@ Deno.serve(async (permintaan: Request) => {
     const sandi = String(badan.password ?? '')
     const username = bersih(badan.username).toLowerCase()
 
-    /* ------------------------------------------------------------ aturan */
-
     if (!PERAN_INTERNAL.includes(peran) && !PERAN_WILAYAH.includes(peran)) {
       return jawab({ ok: false, pesan: 'Peran yang diminta tidak dikenali.' }, 400)
     }
 
-    // Inilah pembatasan yang menjadi alasan fungsi ini ada.
     if (bolehWilayah && !PERAN_TERBIT_KANWIL.includes(peran)) {
       return jawab({
         ok: false,
@@ -223,7 +188,6 @@ Deno.serve(async (permintaan: Request) => {
       }, 400)
     }
 
-    // Wilayah tidak pernah diambil dari permintaan bagi admin kanwil.
     let kanwil: string | null = null
     if (peranWilayah) {
       kanwil = bolehWilayah
@@ -241,18 +205,6 @@ Deno.serve(async (permintaan: Request) => {
       }
     }
 
-    /*
-       Unit penugasan.
-
-       Akun petugas unit tanpa nama unit adalah akun yang tidak pernah melihat
-       satu baris pun: `can_access_upt` menolak setiap baris, dan layarnya kosong
-       tanpa sebab yang terbaca oleh pemakainya. Karena itu unitnya wajib, dan
-       harus benar-benar ada pada data induk — bukan sekadar tidak kosong.
-
-       Bagi admin kanwil, unitnya juga harus berada di wilayahnya sendiri.
-       Tanpa pemeriksaan itu, satu baris pada permintaan cukup untuk menerbitkan
-       akun yang membaca berita unit di provinsi lain.
-    */
     let uptDitugaskan: string | null = null
     if (peranUnit) {
       const diminta = bersih(badan.assigned_upt)
@@ -284,15 +236,6 @@ Deno.serve(async (permintaan: Request) => {
       uptDitugaskan = String(unit.nama_upt)
     }
 
-    /* ----------------------------------------------- tolak yang sudah ada */
-
-    /*
-       Username dan surel keduanya unik di `app_users`. Diperiksa lebih dulu di
-       sini supaya penolakannya berbunyi seperti kalimat, bukan seperti galat
-       basis data — sebab bila dibiarkan sampai ke pemicu, yang muncul hanyalah
-       "Database error creating new user", dan tidak seorang pun bisa menebak
-       bahwa yang bentrok adalah alamat surelnya.
-    */
     const { data: bentrok } = await admin
       .from('app_users')
       .select('id,username,email')
@@ -308,8 +251,6 @@ Deno.serve(async (permintaan: Request) => {
           : `Alamat "${surel}" sudah terdaftar pada akun "${bentrok.username}".`,
       }, 409)
     }
-
-    /* ------------------------------------------------------- terbitkan */
 
     const { data: dibuat, error: galatBuat } = await admin.auth.admin.createUser({
       email: surel,
@@ -329,11 +270,6 @@ Deno.serve(async (permintaan: Request) => {
       }, sudahAda ? 409 : 500)
     }
 
-    /*
-       Pemicu on_auth_user_created sudah membuatkan baris profilnya beserta peran
-       dari metadata. Yang belum ia tahu hanyalah hal-hal yang memang tidak ada
-       di dalam identitas: wilayah, jabatan, dan penanda sandi awal.
-    */
     const { data: profilBaru, error: galatProfil } = await admin
       .from('app_users')
       .update({
@@ -344,9 +280,6 @@ Deno.serve(async (permintaan: Request) => {
         assigned_upt: uptDitugaskan,
         aktif: true,
         must_change_password: true,
-        // Kolom `email` sengaja tidak disentuh: pemicu sudah mengisinya dengan
-        // alamat identitas, dan bagi akun wilayah alamat itu memang alamat
-        // suratnya yang sungguhan.
         updated_at: new Date().toISOString(),
       })
       .eq('auth_user_id', dibuat.user.id)
@@ -355,11 +288,6 @@ Deno.serve(async (permintaan: Request) => {
       .maybeSingle()
 
     if (galatProfil) {
-      /*
-         Identitasnya sudah terbit tetapi profilnya belum lengkap. Dibiarkan
-         setengah jadi akan membingungkan: akun bisa masuk tetapi tanpa wilayah.
-         Identitas itu ditarik kembali supaya keadaannya kembali seperti semula.
-      */
       await admin.auth.admin.deleteUser(dibuat.user.id).catch(() => {})
       return jawab({
         ok: false,
@@ -367,7 +295,6 @@ Deno.serve(async (permintaan: Request) => {
       }, 500)
     }
 
-    /* Jejak audit. Penerbitan akun adalah tindakan yang harus bisa ditelusuri. */
     try {
       await admin.from('audit_log').insert({
         actor_username: pemohon.username,
@@ -379,16 +306,11 @@ Deno.serve(async (permintaan: Request) => {
           username,
           role: peran,
           assigned_kanwil: kanwil,
-          // Unit ikut dicatat. Bagi akun petugas unit, justru kolom inilah yang
-          // menentukan apa yang boleh ia baca — jejak yang menyebut perannya
-          // tetapi tidak menyebut unitnya tidak menjawab pertanyaan yang akan
-          // ditanyakan orang setahun kemudian.
           assigned_upt: uptDitugaskan,
           diterbitkan_oleh: pemohon.username,
         },
       })
     } catch (galatJejak) {
-      // Gagal mencatat jejak tidak boleh membatalkan akun yang sudah sah terbit.
       console.error('Jejak audit gagal ditulis:', galatJejak)
     }
 

@@ -30,6 +30,7 @@ const KEPALA = {
   'Access-Control-Allow-Methods': 'POST, OPTIONS',
 }
 
+const NAMA_SISTEM = 'SI-RADAR INTEL'
 const AMBANG_AKUN = 5
 const AMBANG_IP = 10
 const JENDELA_MENIT = 15
@@ -74,7 +75,6 @@ function waktuWib(iso: string): string {
   }).format(new Date(iso)) + ' WIB'
 }
 
-// deno-lint-ignore no-explicit-any
 async function kirimTelegram(admin: any, teks: string): Promise<boolean> {
   const kunci = env('TELEGRAM_BOT_TOKEN')
   if (!kunci) return false
@@ -134,7 +134,6 @@ function susunPesan(p: Record<string, any>): string {
   return baris.filter((b) => b !== null).join('\n')
 }
 
-// deno-lint-ignore no-explicit-any
 async function laporGagal(admin: any, req: Request, badan: Record<string, any>) {
   const username = String(badan?.username || '').trim().toLowerCase().slice(0, 80)
   const ip = ipDariTajuk(req)

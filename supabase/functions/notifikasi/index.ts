@@ -3,79 +3,23 @@
  *
  * Menguras antrean `notifikasi_berita` dan mengirimkannya ke Telegram.
  *
- * ---------------------------------------------------------------------------
- * SATU ATURAN YANG MENENTUKAN SEGALANYA: NEGATIF DULU, SATU PER SATU
- * ---------------------------------------------------------------------------
+ * SATU ATURAN YANG MENENTUKAN SEGALANYA: NEGATIF DULU, SATU PER SATU.
+ * Berita negatif dikirim sebagai pesan tersendiri; selebihnya dikumpulkan
+ * menjadi satu ringkasan berkala. Grup yang menerima tiga puluh pesan sehari
+ * akan dibisukan dalam dua hari, dan grup yang dibisukan tidak menerima apa-apa.
  *
- * Berita negatif dikirim sebagai pesan tersendiri, lengkap dengan unit, kanwil,
- * urgensi, dan tautannya — sesuatu yang harus bisa dibaca dan ditindaklanjuti
- * tanpa membuka aplikasi apa pun. Selebihnya dikumpulkan menjadi satu ringkasan
- * berkala.
+ * Sejak v1.1 pesan satuan menyebutkan DASAR penilaian mesin, dan menurunkan
+ * nadanya sendiri menjadi "PERLU TELAAH ANALIS" ketika mesin tidak yakin.
+ * Berita di luar lingkup (kategori 9) tidak pernah lagi menjadi pesan satuan;
+ * penyaringnya ada di view notifikasi_antrean_siap.
  *
- * Pembagian itu bukan selera. Grup yang menerima tiga puluh pesan sehari akan
- * dibisukan dalam dua hari, dan grup yang dibisukan tidak menerima apa-apa —
- * termasuk pemberitahuan yang benar-benar penting. Membatasi jumlah pesan
- * satuan adalah cara menjaga agar yang penting tetap terbaca, bukan cara
- * menghemat.
- *
- * ---------------------------------------------------------------------------
- * KENAPA MENUNGGU MESIN KLASIFIKASI
- * ---------------------------------------------------------------------------
- *
- * Berita masuk dengan `sentimen = 'Tidak diketahui'`; yang menilainya
- * `klasifikasi`, yang berjalan sepuluh menit sekali. Mengirim pada detik
- * penyisipan berarti tidak akan pernah tahu mana yang negatif — dan seluruh
- * aturan di atas kehilangan artinya.
- *
- * Karena itu baris yang belum dinilai DITAHAN, tetapi hanya sampai batas
- * `tunggu_klasifikasi_menit`. Sesudah itu ia dikirim apa adanya. Menahan
- * selamanya berarti satu mesin klasifikasi yang berhenti membungkam seluruh
- * pemberitahuan tanpa satu pun tanda.
- *
- * ---------------------------------------------------------------------------
- * KENAPA MEMANGGIL telegram-kirim, BUKAN API TELEGRAM LANGSUNG
- * ---------------------------------------------------------------------------
- *
- * Supaya kunci botnya tetap tinggal di satu tempat. Fungsi ini tidak pernah
- * memegang TELEGRAM_BOT_TOKEN, tidak bisa membocorkannya lewat pesan galat,
- * dan seluruh pengirimannya tercatat di `telegram_deliveries` dengan cara yang
- * persis sama dengan laporan harian.
- *
- * ---------------------------------------------------------------------------
  * CARA MEMANGGIL
- * ---------------------------------------------------------------------------
- *
  *   POST /functions/v1/notifikasi
  *   header: x-sync-token: <SHEET_SYNC_TOKEN>
  *   body:
  *     { "aksi": "kirim" }                  jalan biasa; dipanggil penjadwal
  *     { "aksi": "kirim", "kering": true }  menyusun pesannya, TIDAK mengirim
  *     { "aksi": "keadaan" }                isi antrean dan setelan, tanpa efek
- *
- * `kering` mengembalikan teks pesan yang persis akan dikirim. Itulah cara
- * memeriksa bentuk pemberitahuan tanpa mengganggu satu orang pun di grup.
- *
- * ---------------------------------------------------------------------------
- * v1.1 — PESAN YANG MENGATAKAN SEBERAPA YAKIN IA
- * ---------------------------------------------------------------------------
- *
- * Tiga perubahan, semuanya lahir dari lima pemberitahuan salah yang terkirim
- * pada 7 September 2026:
- *
- *   - Pesan satuan menyebut DASAR penilaian mesin: angka keyakinan dan kata
- *     kunci penentunya. Pada kelima pesan salah itu barisnya akan berbunyi
- *     "kata kunci: gempa" di bawah judul tentang penyaluran bantuan, dan
- *     kekeliruannya terbaca dalam sekali lihat tanpa membuka aplikasi.
- *   - Di bawah keyakinan 0,55 judul pesannya berganti menjadi "PERLU TELAAH
- *     ANALIS". Lihat AMBANG_YAKIN.
- *   - Berita di luar lingkup (kategori 9) tidak pernah lagi menjadi pesan
- *     satuan. Penyaringnya bukan di sini melainkan di view
- *     notifikasi_antrean_siap, tempat seluruh aturan prioritas tinggal.
- *
- * Catatan penggelaran: salinan yang berjalan di Edge Function memuat
- * penjelasan yang lebih ringkas daripada berkas ini, sama seperti salinan
- * modul yang dihasilkan tools/ringkas-fungsi.mjs. Yang berbeda hanya
- * komentarnya; kodenya sama baris per baris.
  */
 
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
@@ -146,6 +90,7 @@ interface Antre {
   luar_lingkup: boolean
   prioritas: number
   negatif: boolean
+  tier_media: number | string | null
 }
 
 const LENCANA: Record<string, string> = {
@@ -155,21 +100,16 @@ const LENCANA: Record<string, string> = {
 /**
  * Di bawah angka ini, kesimpulan mesin disebut dugaan — bukan kabar.
  *
- * ---------------------------------------------------------------------------
- * KENAPA JUDUL PESANNYA IKUT BERUBAH, BUKAN HANYA ANGKANYA
- * ---------------------------------------------------------------------------
- *
  * Sampai 7 September 2026 setiap pesan berjudul "BERITA NEGATIF MASUK" dengan
  * huruf tebal, apa pun keyakinan mesinnya. Yakin 97 persen dan menebak 30
  * persen terbaca persis sama, dan pembacanya tidak punya satu pun cara untuk
  * membedakannya.
  *
- * Akibatnya bukan sekadar salah baca. Pada pagi hari lima pesan salah
- * terkirim, keliman-limanya berkeyakinan rendah — dan kalau saja judulnya
- * berbunyi "perlu telaah analis", tidak seorang pun perlu dipanggil. Yang
- * merusak kepercayaan pada sistem peringatan bukan mesin yang kadang salah,
- * melainkan mesin yang menyampaikan tebakannya dengan nada yang sama dengan
- * kepastiannya.
+ * Pada pagi hari lima pesan salah terkirim, kelima-limanya berkeyakinan
+ * rendah — dan kalau saja judulnya berbunyi "perlu telaah analis", tidak
+ * seorang pun perlu dipanggil. Yang merusak kepercayaan pada sistem peringatan
+ * bukan mesin yang kadang salah, melainkan mesin yang menyampaikan tebakannya
+ * dengan nada yang sama dengan kepastiannya.
  *
  * 0,55 dipilih karena itulah keyakinan yang diberikan mesin kepada unggahan
  * humas yang jenis kegiatannya belum dirinci — batas yang sudah dipakai
@@ -215,9 +155,11 @@ function pesanSatuan(b: Antre): string {
   const ragu = yakin !== null && yakin < AMBANG_YAKIN
 
   const baris = [
-    ragu
-      ? `🟠 <b>PERLU TELAAH ANALIS</b>${penanda}`
-      : `${lencana} <b>BERITA NEGATIF MASUK</b>${penanda}`,
+    b.sentimen === 'Negatif'
+      ? (ragu
+        ? `🟠 <b>PERLU TELAAH ANALIS</b>${penanda}`
+        : `${lencana} <b>BERITA NEGATIF MASUK</b>${penanda}`)
+      : `${b.sentimen === 'Positif' ? '🟢' : '⚪️'} <b>BERITA MASUK</b>${penanda}`,
     '',
     `<b>${amanHtml(potong(b.judul || 'Tanpa judul', 220))}</b>`,
     '',
@@ -227,7 +169,7 @@ function pesanSatuan(b: Antre): string {
   if (golongan) baris.push(`🏷 Golongan: ${amanHtml(golongan)}`)
   baris.push(`⚠️ Urgensi : ${amanHtml(b.urgensi || 'SEDANG')}`)
   baris.push(`📰 Media   : ${amanHtml(b.media || '—')}`)
-  baris.push(`🕘 Terbit  : ${waktuWib(b.tanggal_publikasi)} WIB`)
+  baris.push(`🕐 Terbit  : ${waktuWib(b.tanggal_publikasi)} WIB`)
 
   /*
      Dasar penilaian mesin, disebutkan apa adanya.
@@ -279,7 +221,7 @@ function pesanRingkasan(daftar: Antre[], sejak: string | null): string {
   }
 
   const baris = [
-    '📥 <b>Berita masuk — ringkasan</b>',
+    '📥 <b>Berita masuk sejak ringkasan terakhir</b>',
     sejak ? `<i>Sejak ${waktuWib(sejak)} WIB</i>` : '',
     '',
     `Total <b>${daftar.length}</b> berita baru.`,
@@ -305,6 +247,44 @@ function pesanRingkasan(daftar: Antre[], sejak: string | null): string {
   }
 
   return baris.join('\n')
+}
+
+/**
+ * Mengirim berita negatif ke rute daerah yang cocok, terpisah dari jalur pusat.
+ *
+ * Jalur pusat tidak boleh ikut gagal hanya karena satu bot kanwil sedang diganti.
+ * Kegagalan tiap tujuan tetap dicatat oleh telegram-kirim agar dapat ditelusuri.
+ */
+async function kirimKeRuteDaerah(
+  db: any,
+  token: string,
+  berita: Antre,
+  teks: string,
+): Promise<void> {
+  const tier = Number(berita.tier_media)
+  if (!Number.isInteger(tier)) return
+
+  try {
+    const { data, error } = await db.rpc('rute_notifikasi', {
+      p_tier: tier,
+      p_kanwil: berita.kanwil_asal,
+      p_nama_upt: berita.nama_upt,
+    })
+    if (error) throw error
+
+    for (const rute of data ?? []) {
+      const kirim = await kirimTelegram(token, {
+        aksi: 'kirim',
+        jenis: 'peringatan',
+        pemicu: 'scheduled',
+        teks,
+        chat_id: String(rute.chat_id),
+      })
+      if (!kirim.ok) console.error(`Rute Telegram ${rute.chat_id} gagal: ${kirim.sebab}`)
+    }
+  } catch (galat) {
+    console.error(`Gagal menentukan rute daerah untuk ${berita.berita_id}: ${String(galat)}`)
+  }
 }
 
 /* ================================================================== pelayan */
@@ -434,9 +414,11 @@ Deno.serve(async (permintaan: Request) => {
       const teks = pesanSatuan(b)
       if (kering) { pratinjau.push(teks); hasil.satuan_terkirim++; continue }
 
+      const kirimDaerah = kirimKeRuteDaerah(db, token, b, teks)
       const kirim = await kirimTelegram(token, {
         aksi: 'kirim', jenis: 'peringatan', pemicu: 'scheduled', teks,
       })
+      await kirimDaerah
       if (kirim.ok) {
         hasil.satuan_terkirim++
         await tandai(db, b.berita_id, 'terkirim', 'satuan', kirim.message_id)
@@ -461,6 +443,12 @@ Deno.serve(async (permintaan: Request) => {
         })
         if (kirim.ok) {
           hasil.ringkasan_terkirim = 1
+          // Grup Jatim memang ditetapkan menerima setiap berita. Pengiriman
+          // dilakukan setelah ringkasan pusat berhasil agar antrean yang sama
+          // tidak mengulang puluhan pesan daerah saat jalur pusat sedang gagal.
+          for (const b of lainnya) {
+            await kirimKeRuteDaerah(db, token, b, pesanSatuan(b))
+          }
           for (const b of lainnya) await tandai(db, b.berita_id, 'terkirim', 'ringkasan', kirim.message_id)
           await db.from('notifikasi_setelan')
             .update({ terakhir_ringkasan_at: new Date().toISOString() }).eq('id', 1)

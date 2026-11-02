@@ -5,7 +5,7 @@
  *
  *   public.normalkan_tautan()                     basis data — YANG BERWENANG
  *   web/js/lib/tautan.js                          peramban — peringatan dini
- *   supabase/functions/sheet-sync/sheet-sync.ts   penyalin — penyaringan awal
+ *   supabase/functions/sheet-sync/index.ts        penyalin — penyaringan awal
  *
  * Sampai 6 September 2026 tidak ada satu pun yang menahan ketiganya tetap
  * sama. Komentar di salah satunya sudah menyebut akibatnya: "Kalau keduanya
@@ -123,13 +123,13 @@ import { fileURLToPath } from 'node:url'
 import { join, dirname } from 'node:path'
 
 const akar = join(dirname(fileURLToPath(import.meta.url)), '..')
-const penyalin = readFileSync(join(akar, 'supabase/functions/sheet-sync/sheet-sync.ts'), 'utf8')
+const penyalin = readFileSync(join(akar, 'supabase/functions/sheet-sync/index.ts'), 'utf8')
 
 const WAJIB_ADA = ['mibextid', 'msclkid', 'at_campaign', 'amp']
 const hilang = WAJIB_ADA.filter((k) => !penyalin.includes(k))
 
 if (hilang.length) {
-  console.log(`sheet-sync.ts belum memuat penanda: ${hilang.join(', ')}`)
+  console.log(`sheet-sync/index.ts belum memuat penanda: ${hilang.join(', ')}`)
   console.log('Daftar penanda pelacaknya tertinggal dari aturan basis data.\n')
 }
 

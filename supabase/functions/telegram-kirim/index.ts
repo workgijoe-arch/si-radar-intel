@@ -34,6 +34,17 @@
  */
 
 const TELEGRAM = 'https://api.telegram.org'
+const CHAT_ID_JATIM = '-5409449489'
+
+/**
+ * Bot Jatim dipisah dari bot pusat agar gangguan atau penggantian kredensial
+ * daerah tidak menghentikan pemberitahuan nasional.
+ */
+function pilihKunciBot(chatId: string) {
+  return chatId === CHAT_ID_JATIM
+    ? { nilai: Deno.env.get('TELEGRAM_BOT_TOKEN_JATIM') ?? '', nama: 'TELEGRAM_BOT_TOKEN_JATIM' }
+    : { nilai: Deno.env.get('TELEGRAM_BOT_TOKEN') ?? '', nama: 'TELEGRAM_BOT_TOKEN' }
+}
 
 const kepalaCors = {
   'Access-Control-Allow-Origin': '*',
@@ -419,15 +430,14 @@ Deno.serve(async (permintaan) => {
     return jawab({ galat: `Peran Anda tidak berhak menjalankan aksi "${aksi}".` }, 403)
   }
 
-  const kunciBot = Deno.env.get('TELEGRAM_BOT_TOKEN') ?? ''
+  const pilihanBot = pilihKunciBot(String(badan.chat_id ?? ''))
+  const kunciBot = pilihanBot.nilai
   if (!kunciBot) {
     return jawab({
-      galat: 'TELEGRAM_BOT_TOKEN belum diisi.',
+      galat: `${pilihanBot.nama} belum diisi.`,
       terpasang: false,
       tersambung: false,
-      petunjuk:
-        'Tempelkan kunci bot pada Supabase → Project Settings → Edge Functions → Secrets '
-        + 'dengan nama TELEGRAM_BOT_TOKEN, lalu ulangi permintaan ini.',
+      petunjuk: 'Pasang secret bot yang sesuai di Supabase Edge Functions, lalu ulangi pemeriksaan.',
     }, 503)
   }
 
@@ -529,6 +539,22 @@ Deno.serve(async (permintaan) => {
         }),
       )
 
+      const chatDiminta = String(badan.chat_id ?? '').trim()
+      let grupDiminta: Record<string, unknown> | null = null
+      if (chatDiminta) {
+        try {
+          const obrolan = await telegram(kunciBot, `getChat?chat_id=${encodeURIComponent(chatDiminta)}`) as Record<string, any>
+          grupDiminta = {
+            chat_id: chatDiminta,
+            terjangkau: true,
+            nama_di_telegram: obrolan?.title ?? obrolan?.username ?? obrolan?.first_name ?? null,
+            jenis: obrolan?.type ?? null,
+          }
+        } catch (galat) {
+          grupDiminta = { chat_id: chatDiminta, terjangkau: false, sebab: sensor(String((galat as Error).message ?? galat), kunciBot) }
+        }
+      }
+
       const tidakTerjangkau = diperiksa.filter((t) => !t.terjangkau)
 
       return jawab({
@@ -538,6 +564,8 @@ Deno.serve(async (permintaan) => {
         pemeriksaan_kunci: bentuk,
         grup_terdeteksi: [...grup.values()],
         grup_tersimpan: diperiksa,
+        bot_dipakai: pilihanBot.nama,
+        grup_diminta: grupDiminta,
         /*
            Satu kalimat yang menyebut keadaan yang paling menentukan lebih
            dahulu. Grup tersimpan yang tidak terjangkau adalah kegagalan yang
