@@ -26,7 +26,7 @@ import { belumTerpetakan } from './unit-terpetakan.js'
 import { KONFIG } from './konfig.js'
 /* Berkas laporan berdiri sendiri di luar aplikasi, jadi lambangnya harus ikut
    sebagai teks — sama seperti lembar infografis, dan dari sumber yang sama. */
-import { TRANS_SIBER, DITPAMINTEL } from '../ui/lambang-data.js'
+import { TRANS_SIBER, KEMENTERIAN, PEMASYARAKATAN } from '../ui/lambang-data.js'
 
 /* ------------------------------------------------------------------ dasar */
 
@@ -552,7 +552,8 @@ function bagianKop(d, opsi) {
   <header class="kop">
     <div class="kop-lencana">
       <img class="kop-lambang" src="${TRANS_SIBER}" alt="${esc(KONFIG.nama)}" width="44" height="44">
-      <img class="kop-lambang" src="${DITPAMINTEL}" alt="${esc(KONFIG.instansi)}" width="44" height="44">
+      <img class="kop-lambang" src="${KEMENTERIAN}" alt="${esc(KONFIG.kementerian)}" width="44" height="44">
+      <img class="kop-lambang kop-lambang-perisai" src="${PEMASYARAKATAN}" alt="Lambang Pemasyarakatan" width="44" height="44">
     </div>
     <div class="kop-teks">
       <div class="kop-lembaga">${esc(KONFIG.kementerian)}<br>${esc(KONFIG.induk)}</div>
@@ -879,6 +880,13 @@ body {
      keempat sudut putihnya di atas kop yang berlatar biru tua. */
   border-radius: 50%; object-fit: cover;
   box-shadow: 0 0 0 1px rgba(255,255,255,.28);
+}
+/* Lambang Pemasyarakatan perisai, bukan lingkaran: dipotong bundar, puncaknya
+   hilang. Ia ditaruh utuh di atas piring putih yang bundar; dasar putih
+   JPEG-nya menyatu dengan piring, dan deret kop tetap tiga lingkaran.
+   Bantalan 6px menjaga sudut atas perisai tetap di dalam lingkaran. */
+.kop-lambang-perisai {
+  object-fit: contain; padding: 6px; box-sizing: border-box; background: #fff;
 }
 /* Warna latar dipaksa ikut tercetak. Tanpa ini sebagian besar peramban
    membuang latar dan bayangan saat mencetak, dan kop biru tua berubah menjadi

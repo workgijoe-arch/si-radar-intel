@@ -131,15 +131,20 @@ function panelKepala(m, x, y, l, t) {
 const bagian = []
 bagian.push(kotak(x, y, l, t, 8, WARNA.kartu, { garis: WARNA.garis }))
 const sisi = 66
+const sela = 10
 const ly = y + (t - sisi) / 2
 const kiri = x + 20
-const kanan = x + l - 20 - sisi
+const kanan2 = x + l - 20 - sisi
+const kanan = kanan2 - sela - sisi
 bagian.push(lencana(kiri, ly, sisi, LAMBANG.TRANS_SIBER))
-bagian.push(lencana(kanan, ly, sisi, LAMBANG.DITPAMINTEL))
+bagian.push(lencana(kanan, ly, sisi, LAMBANG.KEMENTERIAN))
+bagian.push(lencana(kanan2, ly, sisi, LAMBANG.PEMASYARAKATAN))
 const tx = kiri + sisi + 18
 const lebarTeksMaks = kanan - 18 - tx
-bagian.push(teks(tx, y + 40, potong('MONITORING BERITA LAPAS & RUTAN', lebarTeksMaks, 30, true), {
-ukuran: 30, tebal: 800, warna: WARNA.navy, huruf: TATA.huruf.judul, spasi: -0.3,
+const judul = 'MONITORING BERITA LAPAS & RUTAN'
+const ukuranJudul = Math.max(24, Math.min(30, Math.floor(lebarTeksMaks / lebarTeks(judul, 1, true) * 10) / 10))
+bagian.push(teks(tx, y + 40, potong(judul, lebarTeksMaks, ukuranJudul, true), {
+ukuran: ukuranJudul, tebal: 800, warna: WARNA.navy, huruf: TATA.huruf.judul, spasi: -0.3,
 }))
 bagian.push(teks(tx, y + 66, potong(`PERIODE ${String(m.periode.label).toUpperCase()}`, lebarTeksMaks, 15, true), {
 ukuran: 15, tebal: 700, warna: WARNA.biru, spasi: 0.8,

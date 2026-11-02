@@ -372,11 +372,15 @@ dengan alasannya.
 
 ## Lambang
 
-Dua lencana resmi dipakai di seluruh keluaran: **SI-RADAR INTEL ·
-Subdirektorat Intelijen** (lencana sistem) dan **Direktorat Pengamanan dan Intelijen
-Republik Indonesia** (lencana direktorat). Urutannya selalu sama — sistem lebih
-dulu, direktorat sesudahnya — di halaman masuk, di kop laporan berkala, dan di
-kepala lembar infografis.
+Tiga lambang resmi dipakai di seluruh keluaran: **SI-RADAR INTEL** (lencana
+sistem), **Kementerian Imigrasi dan Pemasyarakatan Republik Indonesia**, dan
+**Pemasyarakatan**. Urutannya selalu sama — sistem lebih dulu, lalu kementerian
+dan Pemasyarakatan — di halaman masuk, di kop laporan berkala, dan di kepala
+lembar infografis. Lencana Ditpamintel tidak dipakai lagi sejak 2 November 2026.
+
+Lambang Pemasyarakatan berbentuk perisai, bukan lingkaran. Di layar ia memakai
+kelas `lencana-perisai` (tanpa potongan bundar), dan di kop laporan yang
+berlatar biru tua ia diletakkan di atas piring putih bundar.
 
 Berkasnya di `web/assets/`, dan ada **dua bentuk untuk setiap lencana** karena
 ada dua jenis tempat yang memakainya:

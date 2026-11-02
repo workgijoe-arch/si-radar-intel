@@ -245,10 +245,10 @@ console.log('Jangkauan penerjemah PDF')
   )
 
   // Lambang: satu-satunya isi lembar yang datang dari berkas, bukan dari data.
-  // Bila alat penyusunnya belum dijalankan, keduanya hilang diam-diam.
-  uji('lencana Trans-Siber tertanam di lembar',
-    svg.includes('href="data:image/jpeg;base64,') && (svg.match(/<image /g) || []).length === 2,
-    'Kepala lembar harus memuat dua lencana sebagai data URI. Jalankan '
+  // Bila alat penyusunnya belum dijalankan, ketiganya hilang diam-diam.
+  uji('ketiga lencana tertanam di lembar',
+    svg.includes('href="data:image/jpeg;base64,') && (svg.match(/<image /g) || []).length === 3,
+    'Kepala lembar harus memuat tiga lencana sebagai data URI. Jalankan '
     + 'node tools/susun-lambang.mjs bila web/assets/ baru berubah.')
 }
 

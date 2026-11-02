@@ -48,22 +48,30 @@ export const KONFIG = {
   lambang: 'SR',
 
   /**
-     Dua lencana resmi, dan hanya di sini alamatnya ditulis.
+     Tiga lencana resmi, dan hanya di sini alamatnya ditulis. Urutannya sama di
+     setiap tempat: sistem lebih dulu (yang menyusun), lalu kementerian dan
+     Pemasyarakatan (yang mengeluarkan), menurut jenjangnya.
 
-     Keduanya berbentuk lingkaran penuh yang menyentuh keempat tepi berkas.
-     Itu bukan kebetulan: yang menggambarnya cukup memberi `border-radius: 50%`
-     untuk mendapatkan lencana bundar yang rapi, dan ukuran berapa pun tetap
-     seimbang tanpa satu pun penyesuaian per tempat.
+     Sejak 2 November 2026 lencana Ditpamintel tidak dipakai lagi; dua lencana
+     instansi menggantikannya.
+
+     Sistem dan kementerian berbentuk lingkaran penuh yang menyentuh keempat
+     tepi berkas, sehingga `border-radius: 50%` cukup. Pemasyarakatan BUKAN
+     lingkaran melainkan perisai: berkasnya persegi dengan perisai utuh di
+     tengah dan sudut tembus pandang. Memotongnya bundar memangkas puncak
+     perisai, jadi setiap tempat memberinya kelas `lencana-perisai`.
 
      Lembar infografis TIDAK memakai alamat ini — ia menanam lambangnya sebagai
      data URI lewat ui/lambang-data.js, sebab dua dari tiga keluarannya tidak
      bisa mengambil berkas dari mana pun. Alasannya di kepala berkas itu.
   */
   lencana: {
-    /** Lencana sistem: SI-RADAR INTEL · Direktorat Pengamanan dan Intelijen. */
+    /** Lencana sistem: SI-RADAR INTEL. */
     sistem: 'assets/lambang-trans-siber.png',
-    /** Lencana Direktorat Pengamanan dan Intelijen Republik Indonesia. */
-    direktorat: 'assets/lambang-ditpamintel.png',
+    /** Lencana Kementerian Imigrasi dan Pemasyarakatan Republik Indonesia. */
+    kementerian: 'assets/lambang-kementerian.png',
+    /** Lambang Pemasyarakatan — perisai, bukan lingkaran. */
+    pemasyarakatan: 'assets/lambang-pemasyarakatan.png',
   },
 
   instansi: 'Direktorat Pengamanan dan Intelijen',

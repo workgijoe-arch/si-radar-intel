@@ -215,30 +215,40 @@ function panelKepala(m, x, y, l, t) {
   bagian.push(kotak(x, y, l, t, 8, WARNA.kartu, { garis: WARNA.garis }))
 
   /*
-     Dua lambang mengapit judul, dan sisi masing-masing menyatakan perannya:
-     lencana sistem di kiri — yang menyusun lembar ini — dan lencana direktorat
-     di kanan, yang mengeluarkannya. Urutan itu sama dengan urutan kop surat
-     dinas, dan sama dengan yang dipakai halaman masuk.
+     Lambang mengapit judul, dan sisi masing-masing menyatakan perannya:
+     lencana sistem di kiri — yang menyusun lembar ini — dan dua lambang
+     instansi di kanan, kementerian lalu Pemasyarakatan, yang mengeluarkannya.
+     Urutan itu sama dengan urutan kop laporan dan halaman masuk.
 
-     Keduanya ditempel sebagai data URI, bukan ditautkan; alasannya di kepala
+     Ketiganya ditempel sebagai data URI, bukan ditautkan; alasannya di kepala
      ui/lambang-data.js.
   */
   const sisi = 66
+  const sela = 10
   const ly = y + (t - sisi) / 2
   const kiri = x + 20
-  const kanan = x + l - 20 - sisi
+  const kanan2 = x + l - 20 - sisi
+  const kanan = kanan2 - sela - sisi
   bagian.push(lencana(kiri, ly, sisi, LAMBANG.TRANS_SIBER))
-  bagian.push(lencana(kanan, ly, sisi, LAMBANG.DITPAMINTEL))
+  bagian.push(lencana(kanan, ly, sisi, LAMBANG.KEMENTERIAN))
+  bagian.push(lencana(kanan2, ly, sisi, LAMBANG.PEMASYARAKATAN))
 
-  /* Lebar teks dihitung dari kedua lambang, bukan dari lebar panel. Sebelum
-     lambang kanan ada, judul yang memanjang hanya mendekati tepi kartu;
-     sekarang ia akan menabrak Garuda, dan tabrakan itu tidak menghasilkan satu
-     pun galat — ia hanya terkirim ke grup pimpinan seperti itu. */
+  /* Lebar teks dihitung dari lambang terdalam di kanan, bukan dari lebar
+     panel. Judul yang memanjang akan menabrak Garuda kementerian, dan tabrakan
+     itu tidak menghasilkan satu pun galat — ia hanya terkirim ke grup pimpinan
+     seperti itu. */
   const tx = kiri + sisi + 18
   const lebarTeksMaks = kanan - 18 - tx
 
-  bagian.push(teks(tx, y + 40, potong('MONITORING BERITA LAPAS & RUTAN', lebarTeksMaks, 30, true), {
-    ukuran: 30, tebal: 800, warna: WARNA.navy, huruf: TATA.huruf.judul, spasi: -0.3,
+  /* Judul mengecil dulu sebelum dipotong. Lambang ketiga memakan ±76 piksel,
+     dan "MONITORING BERITA LAPAS & RUTAN" pada 30 piksel tidak lagi muat:
+     judul utama yang berakhir "LAPAS &…" di lembar pimpinan lebih buruk
+     daripada judul yang sedikit lebih kecil. Di bawah 24 piksel judul tidak
+     lagi terbaca sebagai judul, jadi di situ potongan kembali berlaku. */
+  const judul = 'MONITORING BERITA LAPAS & RUTAN'
+  const ukuranJudul = Math.max(24, Math.min(30, Math.floor(lebarTeksMaks / lebarTeks(judul, 1, true) * 10) / 10))
+  bagian.push(teks(tx, y + 40, potong(judul, lebarTeksMaks, ukuranJudul, true), {
+    ukuran: ukuranJudul, tebal: 800, warna: WARNA.navy, huruf: TATA.huruf.judul, spasi: -0.3,
   }))
   bagian.push(teks(tx, y + 66, potong(`PERIODE ${String(m.periode.label).toUpperCase()}`, lebarTeksMaks, 15, true), {
     ukuran: 15, tebal: 700, warna: WARNA.biru, spasi: 0.8,

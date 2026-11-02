@@ -46,9 +46,14 @@ const LAMBANG = [
     keterangan: 'Lencana SI-RADAR INTEL — Subdirektorat Intelijen Ditpamintel.',
   },
   {
-    nama: 'DITPAMINTEL',
-    berkas: 'web/assets/lambang-ditpamintel-lembar.jpg',
-    keterangan: 'Lencana Direktorat Pengamanan dan Intelijen Republik Indonesia.',
+    nama: 'KEMENTERIAN',
+    berkas: 'web/assets/lambang-kementerian-lembar.jpg',
+    keterangan: 'Lencana Kementerian Imigrasi dan Pemasyarakatan Republik Indonesia.',
+  },
+  {
+    nama: 'PEMASYARAKATAN',
+    berkas: 'web/assets/lambang-pemasyarakatan-lembar.jpg',
+    keterangan: 'Lambang Pemasyarakatan (perisai, di atas dasar putih).',
   },
 ]
 

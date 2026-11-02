@@ -1,4 +1,4 @@
-import { TRANS_SIBER, DITPAMINTEL } from './lambang-data.js'
+import { TRANS_SIBER, KEMENTERIAN, PEMASYARAKATAN } from './lambang-data.js'
 export const TATA = {
 lebar: 1600,
 tinggi: 1131,
@@ -37,7 +37,7 @@ return `<image x="${Number(x).toFixed(2)}" y="${Number(y).toFixed(2)}"`
 + ` width="${Number(ukuran).toFixed(2)}" height="${Number(ukuran).toFixed(2)}"`
 + ` href="${data}"/>`
 }
-export const LAMBANG = { TRANS_SIBER, DITPAMINTEL }
+export const LAMBANG = { TRANS_SIBER, KEMENTERIAN, PEMASYARAKATAN }
 function bungkus(x, y, ukuran, isi, warna) {
 const s = ukuran / 24
 return `<g transform="translate(${Number(x).toFixed(2)} ${Number(y).toFixed(2)}) scale(${s.toFixed(4)})"`

@@ -301,7 +301,7 @@ let badan = html
    keduanya. Menukar teks itu sekali karena itu cukup, dan lebih tahan daripada
    dua pola yang harus ikut berubah setiap kali salah satu pemakainya berubah.
 */
-for (const jalur of ['assets/lambang-trans-siber.png', 'assets/lambang-ditpamintel.png']) {
+for (const jalur of ['assets/lambang-trans-siber.png', 'assets/lambang-kementerian.png', 'assets/lambang-pemasyarakatan.png']) {
   badan = badan.split(jalur).join(dataUri(jalur, 'image/png'))
 }
 

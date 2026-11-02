@@ -2720,6 +2720,16 @@ kbd {
   box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.16), 0 6px 18px rgba(4, 8, 16, 0.5);
 }
 
+/* Lambang Pemasyarakatan berbentuk perisai. Potongan bundar dan cincin di atas
+   memangkas puncaknya dan melingkari sudut yang memang kosong; bayangannya
+   mengikuti bentuk perisai lewat drop-shadow, bukan kotak berkas. */
+.masuk-lencana img.lencana-perisai {
+  border-radius: 0;
+  object-fit: contain;
+  box-shadow: none;
+  filter: drop-shadow(0 6px 14px rgba(4, 8, 16, 0.5));
+}
+
 @media (max-width: 520px) {
   .masuk-lencana img { width: 46px; height: 46px; }
 }

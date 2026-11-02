@@ -20,7 +20,7 @@
    sekaligus: di web/js/ui/ berkasnya bersebelahan, dan di dalam Edge Function
    ia bersebelahan juga — tools/ringkas-fungsi.mjs menyalin isi ui/ RATA ke
    folder fungsi, tanpa membuat subfolder. */
-import { TRANS_SIBER, DITPAMINTEL } from './lambang-data.js'
+import { TRANS_SIBER, KEMENTERIAN, PEMASYARAKATAN } from './lambang-data.js'
 
 export const TATA = {
   /* Perbandingan A4 lanskap (√2). Lembar yang sama memenuhi kertas ketika
@@ -85,8 +85,10 @@ export const WARNA = {
  * berubah hanya cara memenuhinya. Lambangnya kini ikut sebagai teks di dalam
  * ui/lambang-data.js, disusun tools/susun-lambang.mjs dari web/assets/.
  *
- * Dua lambang, dan urutannya berarti: lencana sistem di kiri (yang menyusun
- * lembar), lencana direktorat di kanan (yang mengeluarkannya).
+ * Tiga lambang, dan sisinya berarti: lencana sistem di kiri (yang menyusun
+ * lembar), kementerian dan Pemasyarakatan di kanan (yang mengeluarkannya).
+ * Lambang Pemasyarakatan perisai di atas dasar putih; kartunya juga putih,
+ * jadi di lembar ia tidak butuh potongan apa pun.
  */
 export function lencana(x, y, ukuran, data) {
   return `<image x="${Number(x).toFixed(2)}" y="${Number(y).toFixed(2)}"`
@@ -94,7 +96,7 @@ export function lencana(x, y, ukuran, data) {
     + ` href="${data}"/>`
 }
 
-export const LAMBANG = { TRANS_SIBER, DITPAMINTEL }
+export const LAMBANG = { TRANS_SIBER, KEMENTERIAN, PEMASYARAKATAN }
 
 /**
  * Piktogram tema dan ubin angka.
