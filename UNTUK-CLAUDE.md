@@ -1,146 +1,109 @@
-# Brief untuk Claude: membuat versi kedua Trans-Siber PAS
+# Brief untuk Claude: SI-RADAR INTEL, versi kedua Trans-Siber PAS
 
-Baca berkas ini sampai habis sebelum menyentuh kode. Isi folder ini adalah
-salinan utuh kode yang sedang berjalan di **trans-siberpas.vercel.app**, diambil
-dari `origin/main` repo `github.com/dimyustlp/cyber-intelpas` pada commit
-`3aafb35` (2 November 2026). Satu berkas sengaja dibuang: `trans-siber-pas-mandiri.html`,
-bundel satu-berkas lama yang masih menunjuk ke basis data lama.
+Baca berkas ini sampai habis sebelum menyentuh kode.
 
-## 1. Tugasnya
+Folder ini berisi kode **SI-RADAR INTEL** (Sistem Pemantauan dan Analisis
+Informasi Digital untuk Deteksi Dini Kerawanan Keamanan pada Subdirektorat
+Intelijen Ditpamintel). Kodenya salinan utuh **Trans-Siber PAS** yang berjalan
+di trans-siberpas.vercel.app, diambil dari `origin/main` repo
+`github.com/dimyustlp/cyber-intelpas` commit `3aafb35` (2 November 2026).
+Riwayatnya ada di git lokal folder ini: commit pertama adalah salinan apa
+adanya, commit kedua penggantian identitas. `git diff HEAD~1` menunjukkan
+persis apa yang berubah.
 
-Pengguna ingin **versi kedua** dari aplikasi ini. Yang berbeda hanya
-**logo dan judul**. Selebihnya (fitur, tampilan, alur, peran, mesin
-klasifikasi) harus sama persis.
+## 1. Keadaannya sekarang
 
-Jadi pekerjaannya adalah penggantian identitas, bukan pembangunan ulang.
-Jangan menulis ulang halaman, jangan mengganti kerangka, jangan "merapikan"
-kode yang tidak berkaitan dengan nama dan logo.
+**Identitas sudah selesai diganti.** Yang berbeda dari versi pertama hanya
+nama dan lencana sistem. Fitur, tampilan, tema warna, alur, peran, dan mesin
+klasifikasi harus tetap sama persis. Jangan menulis ulang halaman, jangan
+mengganti kerangka, dan jangan "merapikan" kode yang tidak berkaitan.
 
-**Keputusan basis data sudah diambil: proyek Supabase BARU (bagian 5).**
-Versi kedua tidak berbagi akun, berita, bot Telegram, maupun
-Edge Function dengan versi pertama, jadi nama dan logo juga diganti di sisi
-peladen (PDF, pesan Telegram, lembar Google). Kerjakan seluruh bagian 3a,
-termasuk daftar "sisi peladen".
+**Basis datanya proyek Supabase BARU** (bagian 5). Versi kedua tidak berbagi
+akun, berita, bot Telegram, maupun Edge Function dengan versi pertama.
+
+**Yang tersisa adalah pekerjaan bagian 5–7:** membangun proyek Supabase,
+menyambungkan `web/` ke sana, dan menggelar di Vercel.
 
 Periksa dulu apakah folder `produksi/` ada di paket ini (lihat 5B). Bila
-tidak ada, berhenti dan minta pengguna menjalankan
-`ambil-dari-produksi.ps1` lebih dulu; tanpa isinya proyek baru tidak bisa
-dibangun.
+tidak ada, berhenti dan minta pengguna menjalankan `ambil-dari-produksi.ps1`
+lebih dulu. Tanpa isinya, proyek baru tidak bisa dibangun.
 
-## 2. Tanyakan tiga hal ini dulu
+## 2. Tanyakan ini kepada pengguna sebelum bagian 5
 
-Jangan menebak. Ketiganya menentukan berkas mana yang disentuh.
+- Ref proyek Supabase baru dan publishable key-nya (proyek dibuat pengguna
+  sendiri).
+- Nama proyek Vercel / alamat situs (misalnya `si-radar-intel.vercel.app`).
+- Apakah versi kedua memakai spreadsheet Google yang sama dengan versi pertama
+  (`sumber_sheet`), atau lembar baru.
 
-1. **Nama baru.** Perlu tiga bentuk: nama lengkap (pengganti `Trans-Siber PAS`),
-   nama pendek untuk ikon telepon (pengganti `Trans-Siber`), dan dua huruf
-   cadangan (pengganti `TS`).
-2. **Logo baru.** Apakah hanya lencana sistem yang diganti, atau lencana
-   direktorat (Garuda, DITPAMINTEL) juga? Apakah nama instansi
-   (`Direktorat Pengamanan dan Intelijen`, `DITPAMINTEL`,
-   `Direktorat Jenderal Pemasyarakatan`) ikut berubah?
-3. **Alamat gelar dan ref proyek Supabase baru.** Nama proyek Vercel
-   (misalnya `nama-baru.vercel.app`), ref proyek Supabase baru, dan
-   publishable key-nya. Proyek Supabase dibuat pengguna sendiri.
+## 3. Penggantian identitas yang sudah dikerjakan
 
-## 3. Peta penggantian
+### 3a. Nama
 
-### 3a. Judul / nama (tulisan di layar)
-
-Hampir semua halaman mengambil nama dari satu tempat, `KONFIG` di
-`web/js/lib/konfig.js`. Ganti di sana lebih dulu:
-
-| Kunci | Nilai sekarang | Dipakai untuk |
+| Bentuk | Nilai | Tempat |
 |---|---|---|
-| `nama` | `Trans-Siber PAS` | kop menu, halaman masuk, laporan, ekspor, pesan |
-| `lambang` | `TS` | teks alternatif bila gambar lencana gagal |
-| `instansi` | `Direktorat Pengamanan dan Intelijen` | kop |
-| `instansiSingkat` | `DITPAMINTEL` | kop |
-| `induk` | `Direktorat Jenderal Pemasyarakatan` | kop |
-| `kementerian` | `Kementerian Imigrasi dan Pemasyarakatan` | kop |
-| `lencana.sistem` / `lencana.direktorat` | `assets/lambang-*.png` | alamat lencana di layar |
+| Nama | `SI-RADAR INTEL` | `KONFIG.nama` di `web/js/lib/konfig.js` |
+| Kepanjangan | Sistem Pemantauan dan Analisis Informasi Digital untuk Deteksi Dini Kerawanan Keamanan pada Subdirektorat Intelijen Ditpamintel | `KONFIG.kepanjangan` (kunci baru; dipakai di halaman masuk) |
+| Nama pendek | `SI-RADAR` | ikon telepon (`manifes.webmanifest`, `apple-mobile-web-app-title`) |
+| Dua huruf | `SR` | `KONFIG.lambang`, ikon tab peramban di `web/index.html` |
+| Nama berkas unduhan | `si-radar-intel-*`, `Laporan-Harian-SI-RADAR-INTEL-*.pdf`, `Infografis-*-SI-RADAR-INTEL-*` | `ekspor.js`, `berita.js`, `infografis.js`, Edge Function `laporan-harian` |
 
-Tempat yang **mengetik namanya sendiri** dan wajib diganti dengan tangan:
+Instansi (`Direktorat Pengamanan dan Intelijen`, `DITPAMINTEL`,
+`Direktorat Jenderal Pemasyarakatan`, kementerian) **tidak** berubah. Lencana
+direktorat (Garuda) juga tetap, dan urutannya tetap: lencana sistem dulu,
+lencana direktorat sesudahnya.
 
-- `web/index.html`: `<meta name="description">` (baris 7), `<title>` (9),
-  `apple-mobile-web-app-title` (32), `aria-label` pada `#akar` (91),
-  `<image href="assets/lambang-trans-siber.png">` (136), `.nyala-nama` (140),
-  `.nyala-instansi` (141). Layar nyala ini harus tergambar sebelum JavaScript
-  berjalan, jadi memang tidak boleh membaca `KONFIG`.
-- `web/manifes.webmanifest`: `name`, `short_name`, `description`.
-- Komentar kepala `web/css/app.css` dan `web/css/gerak.css` (tidak terlihat
-  pengguna; opsional).
+Tulisan nama juga sudah diganti di sisi peladen: Edge Function
+`laporan-harian` (kaki halaman dan metadata PDF), `telegram-kirim`,
+`sheet-sync` (User-Agent), templat Apps Script di `gas/` dan
+`tools/penjaring-celah.gs`, serta data peragaan. Untuk fungsi SQL yang
+menyusun teks Telegram ada migrasi
+`supabase/migrations/20261102030000_nama_si_radar_intel.sql`. Ia **tidak**
+menulis ulang badan fungsinya. Ia mengambil definisi yang sedang berlaku,
+mengganti tulisannya saja, dan berhenti dengan galat bila masih ada bentuk
+"Trans-Siber" lain. Jalankan sesudah skema produksi diterapkan (5C).
 
-Tempat di sisi peladen (wajib, sebab versi kedua punya peladennya sendiri):
+Pemeriksaan: `grep -rn -i "trans-siber" web supabase/functions gas tools`
+hanya boleh menyisakan pengenal di 3c, komentar sejarah di `api.js`, dan
+`tools/bundel.mjs`.
 
-- `supabase/functions/laporan-harian/index.ts` baris 301–302: nama berkas PDF.
-- `supabase/functions/laporan-harian/pdf.ts` baris 410, 437, 439: kaki halaman
-  dan metadata PDF.
-- `supabase/functions/telegram-kirim/index.ts` baris 328 dan 617.
-- `supabase/functions/sheet-sync/sheet-sync.ts` baris 243 (User-Agent).
-- Fungsi SQL `pesan_harian_telegram()`, versi terakhirnya di
-  `supabase/migrations/20260907020000_kop_instansi_dan_ditpamintel.sql`
-  baris 62 dan 202. Ganti dengan **migrasi baru** yang mendefinisikan ulang
-  fungsinya; jangan menyunting migrasi lama yang sudah diterapkan.
-- `gas/lembar-kanwil-v3.template.gs` dan `gas/lembar-kanwil.template.gs`:
-  nama menu, judul folder dan lembar Google, dan alamat
-  `trans-siberpas.vercel.app` (baris 1076).
+### 3b. Lencana
 
-Cara memastikan tidak ada yang tertinggal:
+Lencana baru dipotong dari logo SI RADAR INTEL (2000×2000) menjadi lingkaran
+penuh yang menyentuh keempat tepi berkas, dengan **nama berkas lama**:
 
-```bash
-grep -rn -i "trans-siber\|trans siber" web supabase/functions gas
-```
+| Berkas | Bentuk |
+|---|---|
+| `web/assets/lambang-trans-siber.png` | PNG 128×128 beralfa (kop menu, halaman masuk, layar nyala) |
+| `web/assets/lambang-trans-siber-lembar.jpg` | JPEG 224×224 dasar putih, 26 KB (infografis, PDF) |
+| `web/ikon/ikon-192.png`, `ikon-512.png` | PNG beralfa |
+| `web/ikon/ikon-maskable-512.png` | isi 76% di atas `#0B1F3D` |
+| `web/ikon/apple-touch-icon.png` | 180×180 di atas `#0B1F3D` (iOS menggambar alfa sebagai hitam) |
 
-Sisa yang wajar hanya komentar dan nama konstanta `TRANS_SIBER` (lihat 3c).
+`node tools/susun-lambang.mjs` dan `node tools/ringkas-fungsi.mjs` sudah
+dijalankan, jadi `web/js/ui/lambang-data.js` dan salinannya di
+`supabase/functions/laporan-harian/` sudah memuat lencana baru.
 
-### 3b. Logo
+Bila lencana diganti lagi: ganti berkasnya, lalu jalankan kedua alat itu.
+Kalau langkah itu terlewat, layar menampilkan logo baru tetapi PDF dan
+infografis masih logo lama, **tanpa satu pun pesan galat**. Jangan menyunting
+`lambang-data.js` dengan tangan.
 
-Ada **dua bentuk berkas untuk tiap lencana**, dan keduanya perlu:
-
-| Berkas | Bentuk | Dipakai di |
-|---|---|---|
-| `web/assets/lambang-trans-siber.png` | PNG 128×128, beralfa | kop menu (32 px), halaman masuk (60 px), layar nyala |
-| `web/assets/lambang-trans-siber-lembar.jpg` | JPEG 224×224, dasar putih, ≤ 60 KB | lembar infografis, PDF, kop laporan unduhan |
-| `web/assets/lambang-ditpamintel.png` | PNG 128×128, beralfa | sama, lencana kedua |
-| `web/assets/lambang-ditpamintel-lembar.jpg` | JPEG 224×224, dasar putih | sama, lencana kedua |
-| `web/ikon/ikon-192.png`, `ikon-512.png` | PNG beralfa | ikon PWA |
-| `web/ikon/ikon-maskable-512.png` | PNG 512, isi 76% di atas `#0B1F3D` | ikon Android yang dipotong topeng |
-| `web/ikon/apple-touch-icon.png` | PNG 180×180 | ikon iPhone |
-
-Syarat bentuk yang tidak boleh dilanggar: **lencana harus lingkaran penuh yang
-menyentuh keempat tepi berkas**. Seluruh antarmuka cukup memberi
-`border-radius: 50%`, termasuk untuk memotong sudut putih JPEG di atas kop
-berlatar biru tua. Logo yang punya margin akan tampak mengecil dan bertepi
-putih.
-
-Cara termurah: **pertahankan nama berkasnya, ganti isinya saja.** Dengan begitu
-`KONFIG.lencana`, `web/index.html`, dan `tools/bundel.mjs` tidak perlu disentuh.
-
-Sesudah mengganti JPEG, wajib menjalankan:
-
-```bash
-node tools/susun-lambang.mjs     # menulis ulang web/js/ui/lambang-data.js (data URI)
-node tools/ringkas-fungsi.mjs    # menyalin lambang-data.js ke supabase/functions/laporan-harian/
-```
-
-Lembar infografis menanam lencana sebagai data URI, bukan tautan, sebab dua
-dari tiga keluarannya (PNG untuk Telegram dan PDF dari Edge Function) tidak
-bisa mengambil berkas dari mana pun. Bila langkah ini terlewat, layar
-menampilkan logo baru tetapi PDF dan infografis masih logo lama, **tanpa satu
-pun pesan galat**. Jangan menyunting `lambang-data.js` dengan tangan.
+`web/laporan-contoh.pdf` dihapus. Berkas itu contoh berlogo lama, tidak
+dirujuk kode mana pun, tetapi tetap tersaji untuk umum di `/laporan-contoh.pdf`.
 
 ### 3c. Yang TIDAK boleh diganti
 
 Ini pengenal mesin, bukan tulisan di layar:
 
-- `RANAH_USERNAME = 'pengguna.cyber-intelpas.id'` di `web/js/lib/api.js`
-  baris 217 dan di Edge Function `kelola-pengguna`. Bila basis datanya dipakai
-  bersama, mengganti ini **mengunci seluruh pengguna** tanpa pesan yang
-  menjelaskan sebabnya.
+- `RANAH_USERNAME = 'pengguna.cyber-intelpas.id'` di `web/js/lib/api.js` dan
+  di Edge Function `kelola-pengguna`. Akun ber-username disimpan dengan surel
+  bayangan berranah itu.
 - Nama tabel dan kolom basis data.
-- Nama konstanta seperti `TRANS_SIBER`, `LAMBANG`, kunci `localStorage`
-  `transsiberpas.*` (setiap domain punya penyimpanannya sendiri, jadi tidak
-  bentrok dengan versi pertama).
+- Konstanta `TRANS_SIBER`, `LAMBANG`, nama berkas `lambang-trans-siber.*`, dan
+  kunci `localStorage` `transsiberpas.*`. Setiap domain punya penyimpanannya
+  sendiri, jadi tidak bentrok dengan versi pertama. Menyamakan pengenal kedua
+  versi membuat perbaikan di satu versi bisa disalin ke versi lain apa adanya.
 - `package.json` `name` dan `.claude/launch.json`.
 
 ## 4. Arsitektur singkat dan aturan menyunting
@@ -223,15 +186,17 @@ data versi pertama kecuali pengguna memintanya secara tegas.
 2. **Ganti alamat proyek lama** di seluruh `produksi/*.sql`, `cron-jobs.csv`,
    dan `supabase/functions/**`: setiap `iprsfkuunuiepxjfyjmw` dan
    `ffcebfslmnhivravwhvm` menjadi ref proyek baru.
-   `grep -rn "iprsfkuunuiepxjfyjmw\|ffcebfslmnhivravwhvm" produksi supabase web`
-   harus kosong sesudahnya.
-3. **Ganti kop di sisi basis data** di `skema-public.sql` sebelum diterapkan:
-   fungsi `pesan_harian_telegram()` (cari `Laporan Harian Trans-Siber PAS` dan
-   `dasbor Trans-Siber PAS`), dan setiap teks lain yang
-   `grep -n -i "trans-siber\|ditpamintel" produksi/skema-public.sql` temukan.
-4. **Terapkan `skema-public.sql`** ke proyek baru. Bila ada galat karena
+   `grep -rn "iprsfkuunuiepxjfyjmw\|ffcebfslmnhivravwhvm" produksi supabase/functions web`
+   harus kosong sesudahnya. Migrasi lama di `supabase/migrations/` dibiarkan
+   apa adanya: berkas itu catatan sejarah, bukan yang diterapkan.
+3. **Terapkan `skema-public.sql`** ke proyek baru. Bila ada galat karena
    urutan atau ekstensi, perbaiki berkasnya lalu ulangi pada proyek yang
    masih kosong; jangan menambal setengah jalan.
+4. **Terapkan `20261102030000_nama_si_radar_intel.sql`** tepat sesudahnya.
+   Ia mengganti "Trans-Siber PAS" di setiap fungsi `public` yang menyimpannya
+   (kop pesan Telegram harian) dan mencetak `NOTICE` per fungsi. Bila ia
+   berhenti dengan galat "dalam bentuk lain", periksa fungsi yang disebut,
+   tambahkan pemetaannya ke migrasi itu, lalu jalankan lagi.
 5. **Pemicu `auth.users`**: buat ulang dari `pemicu-auth-users.csv`. Tanpa ini
    akun baru di Auth tidak mendapat baris profil.
 6. **Bucket**: buat ulang dari `storage-buckets.csv`.
@@ -246,9 +211,11 @@ data versi pertama kecuali pengguna memintanya secara tegas.
    (bot **baru** dari @BotFather, jangan bot versi pertama). `SUPABASE_URL` dan
    `SUPABASE_SERVICE_ROLE_KEY` sudah tersedia otomatis. Nilai rahasia diisi
    pengguna sendiri; jangan pernah menuliskannya ke berkas di repo.
-9. **Edge Function.** Ganti nama dan logo di sisi peladen (bagian 3a), jalankan
-   `node tools/susun-lambang.mjs` lalu `node tools/ringkas-fungsi.mjs`, lalu
-   gelar dari **akar repo** (dari folder lain pesannya menyesatkan:
+9. **Edge Function.** Nama dan lencana di sisi peladen sudah diganti (3a, 3b),
+   termasuk salinan `ringkas-fungsi`. Lima fungsi yang diunduh skrip dari
+   produksi (5B) belum diperiksa: jalankan
+   `grep -rn -i "trans-siber" supabase/functions/{deteksi-lonjakan,pantau-masuk,arsip-pangkas}`
+   dan ganti tulisannya bila ada. Lalu gelar dari **akar repo** (dari folder lain pesannya menyesatkan:
    "Entrypoint path does not exist"):
 
    ```bash

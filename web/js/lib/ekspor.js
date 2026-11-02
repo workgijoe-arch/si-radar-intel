@@ -59,7 +59,7 @@ export function namaBerkas(judul, ekstensi, waktu = new Date()) {
     .replace(/[^a-z0-9]+/g, '-')
     .replace(/^-+|-+$/g, '')
     .slice(0, 60)
-  return `trans-siber-pas-${inti}-${tanggalIso(waktu)}.${ekstensi}`
+  return `si-radar-intel-${inti}-${tanggalIso(waktu)}.${ekstensi}`
 }
 
 /**
@@ -76,7 +76,7 @@ export function susunKeterangan({
 }) {
   return {
     nomor: nomorEkspor(waktu),
-    judul: String(judul || 'Keluaran Trans-Siber PAS'),
+    judul: String(judul || 'Keluaran SI-RADAR INTEL'),
     tingkat,
     banner: bannerTingkat(tingkat),
     oleh: profil?.full_name || profil?.username || (KONFIG.mode === 'demo' ? 'Mode peragaan' : 'Tidak diketahui'),

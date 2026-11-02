@@ -1,7 +1,7 @@
 /**
  * Edge Function: penjaring
  *
- * Perayap berita Trans-Siber PAS. Membaca RSS Google News sendiri dan menulis
+ * Perayap berita SI-RADAR INTEL. Membaca RSS Google News sendiri dan menulis
  * langsung ke tabel `berita` — tanpa spreadsheet, tanpa Apps Script, tanpa
  * kuota UrlFetchApp.
  *

@@ -1,6 +1,6 @@
 /**
  * ============================================================================
- * LEMBAR KANWIL v3 — Trans-Siber PAS
+ * LEMBAR KANWIL v3 — SI-RADAR INTEL
  * ============================================================================
  *
  * Satu berkas untuk dua peran. Ditempel SEKALI ke satu spreadsheet — lembar
@@ -55,7 +55,7 @@
  * CARA MEMASANG (sekali, sekitar lima menit)
  * ----------------------------------------------------------------------------
  *
- *   1. Buka spreadsheet "Trans-Siber PAS — Lembar Induk Kanwil"
+ *   1. Buka spreadsheet "SI-RADAR INTEL — Lembar Induk Kanwil"
  *   2. Ekstensi -> Apps Script, hapus isi Code.gs, tempel SELURUH berkas ini
  *   3. Simpan, pilih fungsi `pasangSemua`, tekan Jalankan, beri izin
  *   4. Tunggu. Lembar Daftar Lembar terisi sendiri, beberapa menit sekali,
@@ -91,8 +91,8 @@ var L_INFO_INDUK = 'Petunjuk Induk';
 /** Lembar yang hanya milik induk. Dihapus dari setiap salinan kanwil. */
 var LEMBAR_INDUK_SAJA = [L_DAFTAR, L_JURNAL_INDUK, L_INFO_INDUK];
 
-var NAMA_FOLDER = 'Trans-Siber PAS — Lembar Kanwil';
-var AWALAN_JUDUL = 'Trans-Siber PAS — Kanwil ';
+var NAMA_FOLDER = 'SI-RADAR INTEL — Lembar Kanwil';
+var AWALAN_JUDUL = 'SI-RADAR INTEL — Kanwil ';
 
 /**
  * Batas satu jalan. Apps Script memotong pada enam menit; satu setengah menit
@@ -240,7 +240,7 @@ function dataKanwil(nama) {
 
 function onOpen() {
   var k = bacaKonfig(SpreadsheetApp.getActive());
-  var m = SpreadsheetApp.getUi().createMenu('Trans-Siber PAS');
+  var m = SpreadsheetApp.getUi().createMenu('SI-RADAR INTEL');
 
   if (k.peran === 'kanwil') {
     m.addItem('Jaring portal wilayah (sekarang)', 'jaringSekarang')
@@ -1055,7 +1055,7 @@ function siapkanPetunjuk(ss, d) {
     ['LEMBAR KANWIL — ' + d.wilayah.toUpperCase() + ' (Tipe ' + d.tipe + ')'],
     ['Provinsi yang diampu: ' + d.provinsi.join(', ')],
     [''],
-    ['Lembar ini dijaring otomatis oleh lembar induk Trans-Siber PAS, bergiliran'],
+    ['Lembar ini dijaring otomatis oleh lembar induk SI-RADAR INTEL, bergiliran'],
     ['dengan kanwil lain. Tidak ada yang perlu dipasang di sini.'],
     [''],
     ['DUA HAL YANG HANYA BISA DIKERJAKAN PETUGAS DAERAH'],
@@ -1073,7 +1073,7 @@ function siapkanPetunjuk(ss, d) {
     ['  Lembar tersembunyi _Konfigurasi.'],
     [''],
     ['ALUR KE WEBSITE'],
-    ['  Lembar ini -> sinkronisasi pusat tiap 30 menit -> trans-siberpas.vercel.app'],
+    ['  Lembar ini -> sinkronisasi pusat tiap 30 menit -> situs pusat SI-RADAR INTEL'],
     ['  Penilaian sentimen, tier, dan Telegram dikerjakan di pusat.'],
     [''],
     ['KALAU BERITA TIDAK BERTAMBAH'],
@@ -1115,7 +1115,7 @@ function siapkanPetunjukInduk(ss) {
   if (!l) l = ss.insertSheet(L_INFO_INDUK);
   l.clear();
   var isi = [
-    ['LEMBAR INDUK — Trans-Siber PAS'],
+    ['LEMBAR INDUK — SI-RADAR INTEL'],
     [''],
     ['Lembar ini melahirkan dan menjaring seluruh lembar kanwil.'],
     ['Lembar kanwil ada di folder Drive "' + NAMA_FOLDER + '".'],
@@ -1330,7 +1330,7 @@ function ambilUmpan(alamat, kuota) {
       kuota.ambil++;
       var jawab = UrlFetchApp.fetch(calon[i], {
         muteHttpExceptions: true, followRedirects: true,
-        headers: { 'User-Agent': 'Mozilla/5.0 (Trans-Siber PAS; pemantauan berita publik)' }
+        headers: { 'User-Agent': 'Mozilla/5.0 (SI-RADAR INTEL; pemantauan berita publik)' }
       });
       Utilities.sleep(JEDA_MS);
       if (jawab.getResponseCode() !== 200) continue;

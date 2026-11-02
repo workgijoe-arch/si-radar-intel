@@ -168,9 +168,9 @@ periksa('nomor berkas berpola', /^TSP-\d{8}-[A-Z0-9]{4}$/.test(nomorEkspor(WAKTU
 periksa('dua nomor berturut-turut berbeda', nomorEkspor(WAKTU) !== nomorEkspor(WAKTU))
 sama('nama berkas dibersihkan',
   namaBerkas('Hasil Pencarian: "Sabu" & Cilegon', 'csv', WAKTU),
-  'trans-siber-pas-hasil-pencarian-sabu-cilegon-2026-09-05.csv')
+  'si-radar-intel-hasil-pencarian-sabu-cilegon-2026-09-05.csv')
 sama('nama berkas tanpa judul tetap sah',
-  namaBerkas('', 'json', WAKTU), 'trans-siber-pas-keluaran-2026-09-05.json')
+  namaBerkas('', 'json', WAKTU), 'si-radar-intel-keluaran-2026-09-05.json')
 
 const CONTOH = [
   berita({ id: '1', judul: 'Judul berisi, koma dan "tanda kutip"' }),

@@ -1,10 +1,10 @@
 /**
  * ============================================================================
- * PENJARING CELAH v2.0 — Trans-Siber PAS, sumber ketiga
+ * PENJARING CELAH v2.0 — SI-RADAR INTEL, sumber ketiga
  * ============================================================================
  *
  * Ditempelkan ke Apps Script milik spreadsheet
- *   "Trans-Siber PAS — Penjaring Celah (Sumber 3)"
+ *   "SI-RADAR INTEL — Penjaring Celah (Sumber 3)"
  *   1I_8aDhMxAKZQ-uBHoJaS-RYHj45FOmPXSKj9GXXe5GU
  *
  * ----------------------------------------------------------------------------

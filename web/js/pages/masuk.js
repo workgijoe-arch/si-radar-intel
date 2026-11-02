@@ -63,8 +63,7 @@ export function halamanMasuk({ onMasuk }) {
 
         <div class="masuk-judul-plate">
           <h1>${amankan(KONFIG.nama)}</h1>
-          <p class="sub">Sistem manajemen intelijen pemberitaan pemasyarakatan —
-          dari deteksi media, telaah analis, verifikasi lapangan, sampai keputusan pimpinan.</p>
+          <p class="sub">${amankan(KONFIG.kepanjangan)}.</p>
         </div>
 
         <dl class="masuk-statistik">

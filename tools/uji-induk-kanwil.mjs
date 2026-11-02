@@ -255,7 +255,7 @@ for (const kolom of ['Judul Berita', 'URL / Link Artikel', 'Nama UPT', 'Kanwil']
 }
 
 console.log('\nLembar induk: pasangSemua');
-const induk = new Berkas('Trans-Siber PAS — Lembar Induk Kanwil');
+const induk = new Berkas('SI-RADAR INTEL — Lembar Induk Kanwil');
 induk.insertSheet('Sheet1');
 lingk.aktifkan(induk);
 

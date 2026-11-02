@@ -1147,7 +1147,7 @@ function layarRuntuh(pesan) {
   kotak.style.cssText = 'position:fixed;inset:0;z-index:9999;display:grid;place-items:center;'
     + 'padding:24px;background:#0B1220;color:#E8EDF7;font:15px/1.6 system-ui,sans-serif'
   kotak.innerHTML = `<div style="max-width:46ch;text-align:left">
-    <div style="font-size:11px;letter-spacing:.16em;text-transform:uppercase;opacity:.6">Trans-Siber PAS</div>
+    <div style="font-size:11px;letter-spacing:.16em;text-transform:uppercase;opacity:.6">SI-RADAR INTEL</div>
     <h1 style="font-size:1.25rem;margin:8px 0 10px">Aplikasi gagal dimuat</h1>
     <p style="margin:0 0 6px">Sebagian berkas aplikasi tidak sampai ke peramban. Ini
     hampir selalu berarti sambungan jaringan terputus di tengah pemuatan — bukan

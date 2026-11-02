@@ -31,6 +31,11 @@ const j = keJakarta(nilai)
 if (!j) return '—'
 return `${j.hari} ${BULAN[j.bulan - 1]} ${j.tahun}`
 }
+export function bulanTahun(nilai) {
+const j = keJakarta(nilai)
+if (!j) return '—'
+return `${BULAN[j.bulan - 1]} ${j.tahun}`
+}
 export function tanggalPanjang(nilai) {
 const j = keJakarta(nilai)
 if (!j) return '—'

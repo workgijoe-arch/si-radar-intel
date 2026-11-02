@@ -407,7 +407,7 @@ function bagianKaki(k: Kanvas, dibuat: string, geser = 0) {
   const jumlah = k.halaman.length + geser
   k.halaman.forEach((hal, i) => {
     const teks = amankanTeks(
-      `Trans-Siber PAS - disusun otomatis ${dibuat} WIB - halaman ${i + 1 + geser} dari ${jumlah}`,
+      `SI-RADAR INTEL - disusun otomatis ${dibuat} WIB - halaman ${i + 1 + geser} dari ${jumlah}`,
     )
     hal.drawLine({
       start: { x: TEPI, y: TEPI + 16 }, end: { x: A4.lebar - TEPI, y: TEPI + 16 },
@@ -434,9 +434,9 @@ export type BahanLaporan = {
 export async function susunPdf(bahan: BahanLaporan): Promise<{ base64: string, halaman: number, bita: number, peristiwa: number, lembar: boolean }> {
   const doc = await PDFDocument.create()
   doc.setTitle(`Laporan Harian Pemberitaan Negatif ${bahan.hari}`)
-  doc.setAuthor('Trans-Siber PAS - Direktorat Pengamanan dan Intelijen')
+  doc.setAuthor('SI-RADAR INTEL - Direktorat Pengamanan dan Intelijen')
   doc.setSubject('Laporan intelijen pemberitaan pemasyarakatan')
-  doc.setProducer('Trans-Siber PAS')
+  doc.setProducer('SI-RADAR INTEL')
 
   const reguler = await doc.embedFont(StandardFonts.Helvetica)
   const tebal = await doc.embedFont(StandardFonts.HelveticaBold)

@@ -298,8 +298,8 @@ Deno.serve(async (permintaan: Request) => {
     })
 
     const namaBerkas = jenis === 'mingguan'
-      ? `Laporan-Mingguan-Trans-Siber-PAS-${awalPeriode}_sd_${akhirPeriode}.pdf`
-      : `Laporan-Harian-Trans-Siber-PAS-${hari}.pdf`
+      ? `Laporan-Mingguan-SI-RADAR-INTEL-${awalPeriode}_sd_${akhirPeriode}.pdf`
+      : `Laporan-Harian-SI-RADAR-INTEL-${hari}.pdf`
     const keterangan = amankanTeks(
       `Laporan ${namaJenis} ${judulPeriode} - ${negatif} dari ${total} publikasi bersentimen negatif, `
       + `diuraikan menurut kelompok isu.`,

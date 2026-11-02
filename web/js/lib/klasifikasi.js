@@ -1,5 +1,5 @@
 /**
- * Mesin klasifikasi berita Trans-Siber PAS.
+ * Mesin klasifikasi berita SI-RADAR INTEL.
  *
  * ---------------------------------------------------------------------------
  * Versi 4 — mesin mulai membaca penerbit, bukan hanya teks

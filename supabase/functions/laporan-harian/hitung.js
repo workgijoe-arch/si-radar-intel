@@ -1,5 +1,5 @@
 import { ember, hitungEmber } from './sentimen.js'
-import { tanggalIso } from './format.js'
+import { tanggalIso, bulanTahun } from './format.js'
 import { belumTerpetakan } from './unit-terpetakan.js'
 export const STATUS_DIKECUALIKAN = ['Tidak Valid', 'Diarsipkan']
 export const STATUS_ANTREAN = ['Belum Ditelaah', 'Perlu Koreksi']
@@ -119,6 +119,26 @@ negatif: r.negatif.length,
 pemetaan: r.takTerpetakan.length,
 telaahWilayah: r.antreanWilayah.length,
 }
+}
+export function bulanWib(geser = 0, acuan = new Date()) {
+const [tahunKini, bulanKini] = tanggalIso(acuan).split('-').map(Number)
+const nomor = (tahunKini * 12 + (bulanKini - 1)) + geser
+const tahun = Math.floor(nomor / 12)
+const bulan = (nomor % 12) + 1
+const kode = `${tahun}-${String(bulan).padStart(2, '0')}`
+const akhir = new Date(Date.UTC(tahun, bulan, 0)).getUTCDate()
+return {
+kode,
+mulai: `${kode}-01`,
+selesai: `${kode}-${String(akhir).padStart(2, '0')}`,
+label: bulanTahun(`${kode}-15T12:00:00+07:00`),
+}
+}
+export function dalamBulan(daftar = [], bulan = bulanWib()) {
+return (daftar || []).filter((b) => {
+const h = tanggalIso(b.created_at)
+return h >= bulan.mulai && h <= bulan.selesai
+})
 }
 export function hariBerita(b) {
 return String(b?.tanggal_publikasi || b?.tanggal || b?.created_at || '').slice(0, 10)

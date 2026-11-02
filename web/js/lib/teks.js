@@ -1,5 +1,5 @@
 /**
- * Pengolah teks bahasa Indonesia untuk Trans-Siber PAS.
+ * Pengolah teks bahasa Indonesia untuk SI-RADAR INTEL.
  *
  * Berkas ini lahir dari satu temuan: mesin lama mencocokkan kata kunci dengan
  * `indexOf` biasa. Akibatnya dua kesalahan terjadi bersamaan setiap hari.

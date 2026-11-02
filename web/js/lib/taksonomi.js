@@ -1,5 +1,5 @@
 /**
- * Taksonomi isu pemasyarakatan untuk Trans-Siber PAS.
+ * Taksonomi isu pemasyarakatan untuk SI-RADAR INTEL.
  *
  * Sumber: rumusan Direktorat Pengamanan dan Intelijen, Ditjen Pemasyarakatan.
  * Berkas ini satu-satunya tempat taksonomi didefinisikan. Mesin klasifikasi,

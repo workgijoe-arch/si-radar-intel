@@ -1,5 +1,11 @@
-# Trans-Siber PAS v2
+# SI-RADAR INTEL
 
+> **SI-RADAR INTEL** (Sistem Pemantauan dan Analisis Informasi Digital untuk
+> Deteksi Dini Kerawanan Keamanan pada Subdirektorat Intelijen Ditpamintel)
+> adalah versi kedua Trans-Siber PAS, dengan basis data sendiri. Kodenya sama;
+> yang berganti hanya nama dan lencana sistem. Langkah pembangunannya di
+> `UNTUK-CLAUDE.md`.
+>
 > Sistem ini bernama **Cyber-Intelpas** sampai 1 September 2026. Yang berganti
 > hanya namanya di layar: nama folder, nama repositori, nama tabel basis data,
 > dan ranah surel bayangan akun tetap seperti semula, sebab keempatnya pengenal
@@ -46,7 +52,7 @@ web/                     aplikasi peramban, disajikan apa adanya
                            alasan tiap barisnya di docs/tajuk-keamanan.md
   manifes.webmanifest    nama dan ikon saat dipasang di layar utama telepon
   fonts/                 huruf, disimpan sendiri — dihasilkan tools/ambil-huruf.mjs
-  ikon/                  ikon aplikasi — dipotong dari lencana Trans-Siber
+  ikon/                  ikon aplikasi — dipotong dari lencana SI-RADAR INTEL
   assets/                dua lencana resmi; *.png beralfa untuk layar,
                            *-lembar.jpg berdasar putih untuk lembar dan PDF
   css/app.css            sistem desain — seluruh warna sebagai token
@@ -366,8 +372,8 @@ dengan alasannya.
 
 ## Lambang
 
-Dua lencana resmi dipakai di seluruh keluaran: **Trans-Siber Pemasyarakatan ·
-Database Pamintel** (lencana sistem) dan **Direktorat Pengamanan dan Intelijen
+Dua lencana resmi dipakai di seluruh keluaran: **SI-RADAR INTEL ·
+Subdirektorat Intelijen** (lencana sistem) dan **Direktorat Pengamanan dan Intelijen
 Republik Indonesia** (lencana direktorat). Urutannya selalu sama — sistem lebih
 dulu, direktorat sesudahnya — di halaman masuk, di kop laporan berkala, dan di
 kepala lembar infografis.

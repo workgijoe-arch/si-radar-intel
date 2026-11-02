@@ -1,7 +1,7 @@
 {
-  "name": "Trans-Siber PAS",
-  "short_name": "Trans-Siber",
-  "description": "Sistem manajemen intelijen pemberitaan Direktorat Pengamanan dan Intelijen, Direktorat Jenderal Pemasyarakatan.",
+  "name": "SI-RADAR INTEL",
+  "short_name": "SI-RADAR",
+  "description": "Sistem Pemantauan dan Analisis Informasi Digital untuk Deteksi Dini Kerawanan Keamanan pada Subdirektorat Intelijen Ditpamintel, Direktorat Jenderal Pemasyarakatan.",
   "lang": "id",
   "dir": "ltr",
   "start_url": "./",

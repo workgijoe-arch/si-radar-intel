@@ -29,13 +29,23 @@ export const KONFIG = {
      Yang TIDAK ikut berganti dan tidak boleh diganti: ranah username bayangan
      di lib/api.js, nama folder, nama repositori, dan nama tabel basis data.
      Ketiganya bukan tulisan di layar, melainkan pengenal yang sudah tersimpan.
+
+     Sejak 2 November 2026 kode ini juga menjadi versi kedua bernama
+     SI-RADAR INTEL, dengan basis data sendiri. Yang berganti hanya tulisan
+     dan gambar lencananya. Kunci localStorage `transsiberpas.*`, konstanta
+     TRANS_SIBER, dan nama berkas lambang-trans-siber.* sengaja dibiarkan:
+     ketiganya pengenal, dan menyamakan keduanya membuat perbaikan di satu
+     versi bisa disalin ke versi lain tanpa terjemahan.
   */
-  nama: 'Trans-Siber PAS',
+  nama: 'SI-RADAR INTEL',
+  /** Kepanjangan resmi, untuk halaman masuk dan keterangan aplikasi. */
+  kepanjangan: 'Sistem Pemantauan dan Analisis Informasi Digital untuk Deteksi Dini '
+    + 'Kerawanan Keamanan pada Subdirektorat Intelijen Ditpamintel',
   /**
      Dua huruf, dipakai ketika berkas lambang tidak tergambar: teks alternatif
      gambar, dan tempat yang memang hanya menerima aksara.
   */
-  lambang: 'TS',
+  lambang: 'SR',
 
   /**
      Dua lencana resmi, dan hanya di sini alamatnya ditulis.
@@ -50,7 +60,7 @@ export const KONFIG = {
      bisa mengambil berkas dari mana pun. Alasannya di kepala berkas itu.
   */
   lencana: {
-    /** Lencana sistem: Trans-Siber Pemasyarakatan · Database Pamintel. */
+    /** Lencana sistem: SI-RADAR INTEL · Direktorat Pengamanan dan Intelijen. */
     sistem: 'assets/lambang-trans-siber.png',
     /** Lencana Direktorat Pengamanan dan Intelijen Republik Indonesia. */
     direktorat: 'assets/lambang-ditpamintel.png',

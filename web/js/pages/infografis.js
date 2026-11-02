@@ -151,7 +151,7 @@ function namaBerkas(model, akhiran) {
   const rentang = model.periode.mulai === model.periode.selesai
     ? model.periode.mulai
     : `${model.periode.mulai}_sd_${model.periode.selesai}`
-  return `Infografis-${jenis}-Trans-Siber-PAS-${rentang}.${akhiran}`
+  return `Infografis-${jenis}-SI-RADAR-INTEL-${rentang}.${akhiran}`
 }
 
 export async function halamanInfografis({ keadaan, isi }) {

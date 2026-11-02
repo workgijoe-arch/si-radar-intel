@@ -155,6 +155,6 @@ const peladen = createServer(async (permintaan, jawaban) => {
 })
 
 peladen.listen(PORTA, () => {
-  console.log(`Trans-Siber PAS disajikan di http://localhost:${PORTA}`)
+  console.log(`SI-RADAR INTEL disajikan di http://localhost:${PORTA}`)
   console.log(`Mode peragaan          : http://localhost:${PORTA}/?mode=demo`)
 })

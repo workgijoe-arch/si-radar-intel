@@ -1,6 +1,6 @@
 /**
  * ============================================================================
- * LEMBAR KANWIL — Trans-Siber PAS
+ * LEMBAR KANWIL — SI-RADAR INTEL
  * ============================================================================
  *
  * Satu berkas ini menjadikan spreadsheet kosong sebagai ruang kerja wilayah:
@@ -248,7 +248,7 @@ function diWilayah(teks) {
 
 function onOpen() {
   SpreadsheetApp.getUi()
-    .createMenu('Trans-Siber PAS')
+    .createMenu('SI-RADAR INTEL')
     .addItem('Jaring portal wilayah (sekarang)', 'jaringPortal')
     .addSeparator()
     .addItem('Siapkan / perbaiki format lembar', 'siapkanLembar')
