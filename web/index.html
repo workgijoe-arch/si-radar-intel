@@ -1,0 +1,162 @@
+<!doctype html>
+<html lang="id" data-tema="">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="color-scheme" content="light dark">
+<meta name="description" content="Trans-Siber PAS — sistem manajemen intelijen pemberitaan Direktorat Pengamanan dan Intelijen, Direktorat Jenderal Pemasyarakatan.">
+<meta name="robots" content="noindex, nofollow">
+<title>Trans-Siber PAS</title>
+
+<!--
+   Warna bilah peramban, satu untuk tiap tampilan.
+
+   Tanpa keduanya, Chrome di Android menggambar bilah alamatnya putih di atas
+   dasbor gelap — sebuah garis terang di puncak layar yang membuat aplikasinya
+   terlihat seperti halaman web yang salah muat, bukan seperti perkakas.
+-->
+<meta name="theme-color" content="#F6F8FC" media="(prefers-color-scheme: light)">
+<meta name="theme-color" content="#0B1220" media="(prefers-color-scheme: dark)">
+
+<!--
+   Dipasang di layar utama telepon: bukan supaya bisa dipakai luring — ia
+   memang tidak bisa, dan sengaja tidak dibuat begitu, sebab dasbor intelijen
+   yang menyajikan angka kemarin seolah angka hari ini lebih berbahaya daripada
+   dasbor yang menolak terbuka. Yang diberikan manifes ini hanya ikon, nama, dan
+   layar tanpa bilah alamat bagi petugas lapangan yang membukanya setiap hari.
+-->
+<link rel="manifest" href="manifes.webmanifest">
+<link rel="apple-touch-icon" href="ikon/apple-touch-icon.png">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Trans-Siber">
+
+<!--
+   Huruf disajikan dari peladen ini sendiri, bukan dari Google.
+
+   Sampai 3 September 2026 tiga baris di tempat ini menarik huruf dari
+   fonts.googleapis.com. Akibatnya tiga hal yang semuanya bertentangan dengan
+   apa yang tertulis di README: setiap pembukaan dasbor memberi tahu pihak
+   ketiga alamat IP dan jam kerja petugas; dua perjalanan lintas-ranah berdiri
+   di depan cat pertama; dan di jaringan kantor yang memblokir ranah Google,
+   seluruh aplikasi tampil berhuruf sistem tanpa ada yang tahu sebabnya.
+
+   Berkasnya di web/fonts/, disusun tools/ambil-huruf.mjs. Dua yang paling
+   dahulu dipakai — huruf badan dan huruf angka — dimuat lebih awal; sisanya
+   menyusul sendiri. `crossorigin` wajib ada meski berkasnya seranah: unduhan
+   huruf selalu berjalan dalam mode CORS, dan tanpa penanda itu berkasnya
+   diunduh dua kali.
+-->
+<link rel="preload" href="fonts/plus-jakarta-sans-v12-latin-variabel.woff2" as="font" type="font/woff2" crossorigin>
+<link rel="preload" href="fonts/ibm-plex-mono-v20-latin-400.woff2" as="font" type="font/woff2" crossorigin>
+<link rel="stylesheet" href="css/huruf.css">
+<link rel="stylesheet" href="css/app.css">
+
+<!--
+   Lapisan nyala, ambien, dan gerak — dimuat PALING AKHIR, dan urutannya adalah
+   keseluruhan alasan berkas itu terpisah.
+
+   app.css membuka bagian "6b. Gerak" dengan janji bahwa gerak diletakkan paling
+   akhir supaya tidak ada aturan lain yang menimpanya. Janji itu sudah lama tidak
+   ditepati: ada lebih dari 4.600 baris yang ditulis sesudahnya. Janji yang
+   dijaga disiplin kalah oleh berkas yang bertambah panjang; janji yang dijaga
+   urutan muat tidak bisa kalah begitu.
+-->
+<link rel="stylesheet" href="css/gerak.css">
+
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='7' fill='%230F2C55'/%3E%3Ctext x='16' y='22' font-family='Plus Jakarta Sans,sans-serif' font-size='15' font-weight='700' fill='white' text-anchor='middle'%3ETS%3C/text%3E%3C/svg%3E">
+</head>
+<body>
+
+<!--
+   Latar ambien.
+
+   Ditulis di sini, di luar #akar, dan bukan disusun JavaScript. Dua akibatnya
+   yang dituju: ia sudah ada pada cat pertama, sebelum satu modul pun diunduh,
+   sehingga layar nyala berdiri di atas latar yang sama dengan latar aplikasi;
+   dan setiap penggambaran ulang halaman — yang mengganti seluruh isi #akar —
+   tidak menyentuhnya sama sekali, sehingga noda cahayanya tidak pernah melompat
+   kembali ke awal ketika petugas berpindah menu.
+
+   aria-hidden: tidak ada satu pun keterangan di dalamnya. Pembaca layar yang
+   membacakan empat div kosong hanya kehilangan waktu.
+-->
+<div class="ambien" aria-hidden="true">
+  <div class="ambien-noda ambien-noda-1"></div>
+  <div class="ambien-noda ambien-noda-2"></div>
+  <div class="ambien-kisi"></div>
+  <div class="ambien-butir"></div>
+</div>
+
+<div id="akar" role="application" aria-label="Trans-Siber PAS"></div>
+
+<!--
+   Layar nyala.
+
+   Sebelumnya di tempat ini ada empat batang abu-abu berdenyut yang meniru
+   susunan halaman masuk. Itu menjawab satu hal saja — sedang memuat — dan
+   membuat pemuatan tiga detik terlihat persis sama dengan pemuatan yang tidak
+   akan pernah selesai.
+
+   Markahnya di HTML, bukan disusun JavaScript, dan itu wajib: layar ini harus
+   tergambar pada cat pertama. Layar nyala yang menunggu modul selesai diunduh
+   tidak menyelesaikan masalah yang ia ada untuk menyelesaikannya.
+
+   Nama sistem tertulis dua kali di berkas ini — di <title> dan di sini — dan itu
+   memang duplikasi. Sumber kebenarannya tetap KONFIG.nama di js/lib/konfig.js;
+   keduanya di sini ada karena harus terbaca sebelum satu baris JavaScript pun
+   berjalan, alasan yang sama dengan alasan <title>.
+
+   Ia memadamkan dirinya sendiri sesudah 15 detik meski JavaScript tidak pernah
+   berjalan — lihat `.nyala` di css/gerak.css. Tanpa itu, modul inti yang gagal
+   diunduh meninggalkan layar ini menutupi aplikasi selamanya.
+-->
+<div class="nyala" id="nyala" role="status" aria-label="Memuat sistem">
+  <div class="nyala-isi">
+    <svg class="nyala-lambang" viewBox="0 0 96 96" aria-hidden="true">
+      <!-- Segi delapan, bukan lingkaran: bentuk lencana kedinasan, dan bentuk
+           yang tidak dipakai lingkaran pemuat yang sama di mana-mana. -->
+      <path class="nyala-cincin"
+            d="M34 6 L62 6 L90 34 L90 62 L62 90 L34 90 L6 62 L6 34 Z"></path>
+      <path class="nyala-busur" d="M48 12 A36 36 0 0 1 84 48"></path>
+      <!--
+         Lencana di dalam cincin, menggantikan dua huruf "TS" yang berdiri di
+         sini sampai 7 September 2026.
+
+         Berkasnya sudah bundar dengan sudut tembus pandang, jadi tidak ada
+         clipPath sama sekali. Yang tidak boleh hilang adalah cincin dan
+         busurnya: keduanya yang menyatakan "masih berjalan", dan lencana yang
+         diam sendirian membuat pemuatan tiga detik terlihat persis seperti
+         pemuatan yang tidak akan pernah selesai.
+
+         Alamatnya diketik di sini, bukan diambil dari KONFIG.lencana, dengan
+         alasan yang sama dengan <title> dan nama sistem di bawah: layar ini
+         harus tergambar sebelum satu baris JavaScript pun berjalan.
+      -->
+      <image href="assets/lambang-trans-siber.png" x="24" y="24" width="48" height="48"></image>
+    </svg>
+
+    <div>
+      <p class="nyala-nama">Trans-Siber PAS</p>
+      <p class="nyala-instansi">Direktorat Pengamanan dan Intelijen<br>Direktorat Jenderal Pemasyarakatan</p>
+    </div>
+
+    <div class="nyala-rel"><div class="nyala-laju" id="nyala-laju"></div></div>
+
+    <p class="nyala-keadaan" id="nyala-keadaan">Menyalakan sistem</p>
+  </div>
+</div>
+
+<div class="roti-wadah" id="roti-wadah" aria-live="polite" aria-atomic="false"></div>
+
+<noscript>
+  <div style="padding:40px;max-width:60ch;margin:0 auto;font-family:system-ui">
+    <h1 style="font-size:1.3rem">JavaScript diperlukan</h1>
+    <p>Trans-Siber PAS berjalan sepenuhnya di peramban dan membutuhkan JavaScript
+    aktif. Aktifkan JavaScript, lalu muat ulang halaman ini.</p>
+  </div>
+</noscript>
+
+<script type="module" src="js/main.js"></script>
+</body>
+</html>

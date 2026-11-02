@@ -1,0 +1,11 @@
+{
+  "version": "0.0.1",
+  "configurations": [
+    {
+      "name": "trans-siberpas",
+      "runtimeExecutable": "node",
+      "runtimeArgs": ["tools/server-lokal.mjs", "4173"],
+      "port": 4173
+    }
+  ]
+}

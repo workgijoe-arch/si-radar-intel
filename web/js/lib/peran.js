@@ -1,0 +1,585 @@
+/**
+ * Peran, izin, dan navigasi.
+ *
+ * Berkas ini adalah cerminan sisi peramban dari policy RLS di basis data.
+ * Yang menegakkan aturan tetap PostgreSQL — kalau seseorang mengakali menu di
+ * sini, kuerinya tetap ditolak di server. Guna daftar ini hanya satu: jangan
+ * menampilkan tombol yang, kalau ditekan, hanya akan berujung penolakan.
+ *
+ * Sebutan peran mengikuti nomenklatur Ditpamintel yang dirumuskan pengguna.
+ */
+
+export const PERAN = {
+  super_admin: {
+    nama: 'Administrator Sistem Intelijen',
+    ringkas: 'Superadmin',
+    lingkup: 'internal',
+    tugas: 'Mengelola hak akses, parameter mesin klasifikasi, dan kesehatan sistem.',
+  },
+  news_data_operator: {
+    nama: 'Operator Pengumpulan Data',
+    ringkas: 'Puldata',
+    lingkup: 'internal',
+    tugas: 'Menjaga suplai data masuk, menyaring duplikasi, dan memasukkan isu viral yang belum tertangkap sistem.',
+  },
+  media_intelligence_analyst: {
+    nama: 'Analis Intelijen Media',
+    ringkas: 'Analis OSINT',
+    lingkup: 'internal',
+    tugas: 'Memvalidasi klasifikasi mesin, memetakan pola isu, dan menyusun laporan intelijen berkala.',
+  },
+  field_verification_officer: {
+    nama: 'Petugas Verifikasi Lapangan',
+    ringkas: 'Pulbaket',
+    lingkup: 'internal',
+    tugas: 'Menyandingkan berita media dengan fakta lapangan dan mengunggah bukti temuan.',
+  },
+  evaluation_recommendation_analyst: {
+    nama: 'Analis Evaluasi dan Mitigasi Risiko',
+    ringkas: 'Evaluasi',
+    lingkup: 'internal',
+    tugas: 'Menggabungkan analisis media dengan fakta lapangan menjadi rekomendasi tindakan.',
+  },
+  executive_decision_maker: {
+    nama: 'Pimpinan Pengambil Keputusan',
+    ringkas: 'Pimpinan',
+    lingkup: 'internal',
+    tugas: 'Memantau dasbor eksekutif, mengkaji rekomendasi, dan menerbitkan keputusan.',
+  },
+  /*
+     Dua peran daerah, dibagi menurut CAKUPAN — bukan menurut jenis pekerjaan.
+
+     Pembagiannya sempat tiga dan sempat menurut pekerjaan (siapa menginput,
+     siapa memeriksa). Yang berlaku sekarang lebih sederhana dan lebih mudah
+     dijelaskan kepada petugas baru: kantor wilayah memegang seluruh unit di
+     bawahnya, penelaah memegang satu unit.
+
+     Nama kuncinya sama persis dengan yang diterima basis data pada migrasi 14.
+     Kalau keduanya berbeda, pengguna daerah akan mendapat menu internal karena
+     perannya tidak dikenali di sini.
+  */
+  kanwil_admin: {
+    nama: 'Administrator Kantor Wilayah',
+    ringkas: 'Admin Kanwil',
+    lingkup: 'eksternal',
+    tugas: 'Memasukkan berita untuk tiap unit di wilayahnya, menerbitkan akun '
+      + 'penelaah unit, menelaah, dan memantau seluruh unit yang dibawahinya. '
+      + 'Tidak melihat data pusat.',
+  },
+  upt_penelaah: {
+    nama: 'Penelaah Berita UPT',
+    ringkas: 'Penelaah UPT',
+    lingkup: 'eksternal',
+    tugas: 'Menelaah berita unitnya sendiri — memvalidasi atau merevisi penilaian '
+      + 'mesin — menuliskan tanggapan resmi unit, dan memantau dasbor unitnya. '
+      + 'Tidak melihat unit lain, dan tidak memasukkan berita.',
+  },
+}
+
+/*
+   Nama peran yang sudah tidak dipakai, dipetakan ke penggantinya.
+
+   Penggelaran tidak pernah serentak: basis data, Edge Function, dan berkas web
+   berpindah pada menit yang berbeda. Selama beberapa menit itu masih mungkin
+   sebuah profil terbaca dengan peran yang sudah dihapus. Tanpa pemetaan ini,
+   pemiliknya masuk dan menemukan menu kosong — dan tidak ada satu kalimat pun
+   di layar yang menjelaskan mengapa.
+
+   Ketiganya menunjuk ke peran yang sama, dan itu memang yang terjadi: peran
+   penelaah kantor wilayah dan petugas unit lebur menjadi satu penelaah unit.
+*/
+const PERAN_LAMA = {
+  kanwil_penginput: 'upt_penelaah',
+  kanwil_penelaah: 'upt_penelaah',
+  upt_petugas: 'upt_penelaah',
+}
+
+/** Nama peran yang berlaku hari ini untuk sebuah nilai apa pun dari basis data. */
+export function peranBaku(peran) {
+  return PERAN_LAMA[peran] || peran
+}
+
+/**
+ * Peran wilayah dipisahkan sebagai pihak eksternal. Mereka tidak melihat dasbor
+ * nasional, tidak melihat kanal pusat, dan tidak melihat satu pun modul
+ * internal — hanya ruang wilayahnya sendiri.
+ *
+ * Daftar ini hanya menentukan menu. Yang benar-benar menahan data adalah policy
+ * RLS: `can_access_berita` menolak baris yang bukan wilayahnya, dan penolakan
+ * itu berlaku sekalipun seseorang mengetik alamat halaman internal langsung.
+ */
+export const PERAN_EKSTERNAL = new Set(['kanwil_admin', 'upt_penelaah'])
+
+/** Peran yang cakupannya satu unit, bukan satu kantor wilayah. */
+export const PERAN_UNIT = new Set(['upt_penelaah'])
+
+/*
+   Satu izin yang dipegang SETIAP peran: membuka panduan.
+
+   Ditulis sebagai izin, bukan sebagai butir menu tanpa syarat, supaya ketiga
+   muara penegakan hak — penjaga rute, penyapu tombol, dan penyaring menu —
+   memperlakukannya dengan aturan yang sama seperti seluruh halaman lain.
+   Butir menu yang syaratnya kosong adalah satu-satunya bentuk yang ketiganya
+   harus diajari mengenali secara khusus, dan bentuk semacam itu selalu
+   terlewat di salah satu dari ketiganya.
+*/
+export const IZIN = {
+  super_admin: ['*'],
+
+  executive_decision_maker: [
+    'lihat_panduan',
+    'lihat_dasbor', 'lihat_briefing', 'lihat_berita', 'lihat_berita_terverifikasi',
+    'lihat_peta', 'lihat_tren', 'lihat_kasus', 'lihat_laporan_lapangan',
+    'lihat_rekomendasi', 'putuskan_kasus', 'lihat_laporan', 'unduh_laporan',
+    'setujui_laporan', 'publikasi_laporan', 'lihat_peringatan', 'lihat_tindak_lanjut',
+    'kelola_tindak_lanjut', 'lihat_lonjakan',
+  ],
+
+  media_intelligence_analyst: [
+    'lihat_panduan',
+    'lihat_dasbor', 'lihat_briefing', 'lihat_berita', 'buat_berita', 'telaah_berita',
+    'verifikasi_berita', 'petakan_upt', 'lihat_peta', 'lihat_tren', 'lihat_kasus',
+    'kelola_kasus', 'kaitkan_berita_kasus', 'buat_laporan', 'sunting_draf_laporan',
+    'lihat_laporan', 'unduh_laporan', 'kirim_telegram', 'lihat_peringatan',
+    'lihat_tindak_lanjut', 'unggah_lampiran', 'tugaskan_lapangan', 'lihat_penugasan',
+    'lihat_laporan_lapangan', 'lihat_sinkronisasi',
+    'lihat_ruang_analis', 'kelola_aturan', 'lihat_lonjakan',
+  ],
+
+  news_data_operator: [
+    'lihat_panduan',
+    'lihat_dasbor', 'lihat_briefing', 'lihat_berita', 'buat_berita', 'sunting_berita_sendiri',
+    'validasi_metadata', 'lihat_sinkronisasi', 'jalankan_sinkronisasi', 'lihat_duplikat',
+    'unggah_lampiran', 'lihat_ruang_analis',
+  ],
+
+  field_verification_officer: [
+    'lihat_panduan',
+    'lihat_dasbor', 'lihat_briefing', 'lihat_kasus_ditugaskan', 'lihat_penugasan',
+    'kirim_laporan_lapangan', 'unggah_bukti_lapangan', 'perbarui_penugasan',
+    'lihat_laporan_lapangan_sendiri', 'lihat_tindak_lanjut', 'perbarui_tindak_lanjut',
+  ],
+
+  evaluation_recommendation_analyst: [
+    'lihat_panduan',
+    'lihat_dasbor', 'lihat_briefing', 'lihat_berita', 'lihat_kasus', 'lihat_laporan_lapangan',
+    'lihat_penugasan', 'lihat_peringatan', 'analisis_kasus', 'kelola_rekomendasi',
+    'nilai_tindak_lanjut', 'buat_laporan',
+    'sunting_draf_laporan', 'lihat_laporan', 'unduh_laporan', 'lihat_tren',
+    'lihat_tindak_lanjut', 'kelola_tindak_lanjut', 'perbarui_tindak_lanjut',
+    'lihat_ruang_analis', 'kelola_aturan',
+  ],
+
+  /*
+     Memasukkan berita tinggal pada satu peran daerah.
+
+     Sejak 1 September 2026 hanya admin kanwil — bukan karena penelaah tidak
+     dipercaya, melainkan karena satu pintu masuk berarti satu orang yang bisa
+     ditanya ketika sebuah kiriman keliru.
+
+     Ia juga tetap boleh menelaah, sekalipun ia sendiri yang memasukkan berita.
+     Itu diketahui dan diterima: penelaah unit memeriksa lebih dulu, dan putusan
+     keduanya tercatat lengkap dengan nama penelaahnya masing-masing.
+  */
+  kanwil_admin: [
+    'lihat_panduan',
+    'lihat_dasbor_wilayah', 'buat_berita', 'lihat_berita_wilayah',
+    'lihat_kiriman_wilayah', 'lihat_unit_wilayah', 'telaah_wilayah',
+    // Menerbitkan akun penelaah unit di wilayahnya sendiri. Batasnya ditegakkan
+    // Edge Function, bukan izin ini — izin ini hanya menentukan menunya muncul.
+    'kelola_pengguna_wilayah',
+  ],
+
+  /*
+     Penelaah unit tidak mewarisi satu pun izin wilayah.
+
+     Kalau ia diberi `lihat_berita_wilayah`, halaman berita wilayah akan
+     terbuka baginya dan menampilkan — persis — apa yang dikirim peladen, yaitu
+     unitnya sendiri. Layarnya benar, tetapi judulnya berbohong: ia akan
+     membaca "Berita Wilayah" sambil melihat satu unit, dan menyimpulkan
+     wilayahnya hanya punya satu unit yang pernah diberitakan.
+  */
+  upt_penelaah: [
+    'lihat_panduan',
+    'lihat_dasbor_unit', 'lihat_berita_unit', 'telaah_wilayah', 'tanggapi_berita_unit',
+  ],
+}
+
+/** Izin yang tidak pernah diberikan kepada peran mana pun selain superadmin. */
+export const IZIN_ADMIN = [
+  'kelola_pengguna', 'kelola_pengaturan', 'lihat_audit', 'lihat_kesehatan',
+  'kelola_integrasi', 'kelola_koordinat', 'kelola_peran',
+]
+
+/*
+   Seluruh fungsi di bawah menerjemahkan nama peran lebih dulu lewat
+   `peranBaku`. Diletakkan di satu tempat, bukan di tiap pemanggil, supaya
+   penambahan nama lama berikutnya tidak menuntut penyuntingan sepuluh berkas.
+*/
+
+export function punyaIzin(peran, izin) {
+  const daftar = IZIN[peranBaku(peran)]
+  if (!daftar) return false
+  if (daftar.includes('*')) return true
+  return daftar.includes(izin)
+}
+
+export function izinPeran(peran) {
+  const daftar = IZIN[peranBaku(peran)] || []
+  if (daftar.includes('*')) return [...new Set([...Object.values(IZIN).flat().filter((i) => i !== '*'), ...IZIN_ADMIN])]
+  return daftar
+}
+
+export function labelPeran(peran) {
+  return PERAN[peranBaku(peran)]?.nama || peran
+}
+
+export function adalahEksternal(peran) {
+  return PERAN_EKSTERNAL.has(peranBaku(peran))
+}
+
+/** Benar bila cakupan peran ini satu unit, bukan satu kantor wilayah. */
+export function adalahUnit(peran) {
+  return PERAN_UNIT.has(peranBaku(peran))
+}
+
+/**
+ * Susunan menu. Setiap butir menyebut izin yang dibutuhkan; menu disaring
+ * sekali saat sesi dimulai, dan grup yang kosong ikut hilang.
+ */
+export const MENU = [
+  {
+    grup: 'Ruang Pimpinan',
+    butir: [
+      { id: 'dasbor', label: 'Dasbor Eksekutif', ikon: 'dasbor', izin: 'lihat_dasbor' },
+      /*
+         Izin `lihat_briefing` sudah diberikan kepada lima peran sejak lama,
+         dan sampai 3 September 2026 tidak ada satu pun butir menu maupun
+         halaman yang memakainya — izin yang menganga tanpa pintu. Siapa pun
+         yang membaca daftar izin di atas berhak menyimpulkan halamannya ada.
+         Sekarang ia ada.
+      */
+      /*
+         Sejak 23 September 2026 butir ini bernama Peringatan Dini — isinya tetap
+         ringkasan situasi yang sama. Halaman kartu peringatan yang lama tidak
+         lagi punya butir menu sendiri: kartunya kini dibuka dari kata risiko di
+         bagian Penilaian risiko halaman ini, dan halaman penuhnya tetap bisa
+         dicapai lewat tombol-tombol yang menunjuknya (lihat SYARAT_TAMBAHAN).
+         Dua butir menu bernama sama akan membuat pembacanya menebak mana yang
+         dimaksud rekannya.
+      */
+      { id: 'briefing', label: 'Peringatan Dini', ikon: 'peringatan', izin: 'lihat_briefing', lencana: 'peringatan' },
+      /*
+         Deteksi Lonjakan membaca dua tabel yang diisi mesin di peladen tiap
+         jam: lonjakan berita negatif per unit, dan isu yang diangkat banyak
+         media sekaligus. Peringatan Dini di atas menilai berita satu per satu;
+         butir ini menilai pola. Izinnya `lihat_lonjakan`, sama persis dengan
+         kebijakan baca kedua tabelnya di basis data (analis media, pengambil
+         keputusan, superadmin), supaya tidak ada peran yang membuka halaman
+         yang pasti kosong baginya. Situation Room, layar dinding versinya,
+         tidak punya butir menu: ia dibuka dari tombol di halaman ini.
+      */
+      { id: 'deteksi-lonjakan', label: 'Deteksi Lonjakan', ikon: 'tren', izin: 'lihat_lonjakan' },
+      // Kanal negatif berdiri sendiri di menu. Isu yang merugikan institusi
+      // tidak boleh dicari dulu di dalam daftar gabungan sebelum bisa dibaca.
+      { id: 'negatif', label: 'Berita Negatif', ikon: 'peringatan', izin: 'lihat_dasbor', lencana: 'negatif' },
+      { id: 'positif', label: 'Berita Positif', ikon: 'centang', izin: 'lihat_dasbor' },
+      // Peta Sebaran tidak lagi berdiri di menu; ia tergambar di dalam Dasbor
+      // Eksekutif bagi peran yang memegang `lihat_peta`.
+      /*
+         Tren, Narasi, Kaitan, dan Pusat Komando — satu butir sejak 23 September
+         2026, empat tab di dalamnya (pages/analisis.js).
+
+         Dulu keempatnya berdiri sendiri, dengan alasan bahwa halaman bertab
+         membuat tab kedua dan ketiga tidak pernah dibuka. User memilih menu
+         yang lebih pendek. Tab-nya dibuat sebagai tautan ke alamat lama supaya
+         yang dulu bisa dibuka langsung masih bisa dibuka langsung.
+
+         Syaratnya `lihat_dasbor`, bukan `lihat_tren`: Operator Puldata dan
+         Petugas Verifikasi Lapangan dulu melihat Pusat Komando di menunya, dan
+         menggabungkan menu tidak boleh diam-diam mencabut itu. Hak tiap tab
+         tetap izinnya sendiri — lihat SYARAT_TAMBAHAN.
+      */
+      { id: 'analisis', label: 'Analisis Pemberitaan', ikon: 'tren', izin: 'lihat_dasbor' },
+    ],
+  },
+  {
+    grup: 'Ruang Analis',
+    butir: [
+      { id: 'ruang', label: 'Ruang Analis', ikon: 'pengguna', izin: 'lihat_ruang_analis' },
+      { id: 'cari', label: 'Pencarian Lanjutan', ikon: 'cari', izin: 'lihat_berita' },
+    ],
+  },
+  {
+    grup: 'Pengelolaan Berita',
+    butir: [
+      { id: 'berita', label: 'Pusat Data Berita', ikon: 'berita', izin: 'lihat_berita' },
+      // Input manual berdiri sendiri di menu, bukan tombol di dalam Pusat Data
+      // Berita. Isu viral yang belum tertangkap perayap adalah pekerjaan harian
+      // Operator Puldata, dan pekerjaan harian tidak pantas disembunyikan di
+      // dalam halaman lain.
+      { id: 'input', label: 'Input Berita', ikon: 'tambah', izin: 'buat_berita' },
+      /* Antrean Telaah pindah ke Kasus Intelijen; Pemetaan UPT dan
+         Sinkronisasi Sumber tidak lagi punya butir menu (23 September 2026).
+         Keduanya tetap bisa dibuka dari tombol di halaman lain — lihat
+         SYARAT_TAMBAHAN. */
+    ],
+  },
+  {
+    grup: 'Siklus Intelijen',
+    butir: [
+      /*
+         Antrean Telaah dan Kasus Intelijen, satu butir sejak 23 September
+         2026 (pages/siklus-kasus.js): menelaah berita lalu membentuk kasus
+         beserta Analisa Awal-nya adalah dua langkah satu pekerjaan.
+
+         Syaratnya `lihat_kasus`. Setiap peran yang memegang `telaah_berita`
+         juga memegang `lihat_kasus`, jadi tidak ada penelaah yang kehilangan
+         antreannya. Lencananya lencana antrean telaah, supaya angka berita
+         yang menunggu tidak hilang bersama butir menunya yang lama — tetapi
+         hanya bagi yang berhak membuka tab itu (`lencanaUntuk`). Pimpinan
+         membuka butir yang sama dan tidak menelaah; angka 83 di menunya
+         menjanjikan pekerjaan yang bukan miliknya.
+      */
+      { id: 'siklus-kasus', label: 'Kasus Intelijen', ikon: 'kasus', izin: 'lihat_kasus', lencana: 'telaah', lencanaUntuk: 'telaah' },
+      { id: 'lapangan', label: 'Verifikasi Lapangan', ikon: 'lapangan', izin: 'lihat_penugasan' },
+      { id: 'evaluasi', label: 'Evaluasi dan Rekomendasi', ikon: 'tindak', izin: 'analisis_kasus' },
+      { id: 'keputusan', label: 'Keputusan Pimpinan', ikon: 'keputusan', izin: 'putuskan_kasus' },
+      { id: 'tindak', label: 'Tindak Lanjut', ikon: 'tindak', izin: 'lihat_tindak_lanjut' },
+    ],
+  },
+  {
+    grup: 'Pelaporan',
+    butir: [
+      { id: 'laporan', label: 'Laporan Berkala', ikon: 'laporan', izin: 'lihat_laporan' },
+      { id: 'infografis', label: 'Lembar Infografis', ikon: 'tren', izin: 'lihat_laporan' },
+      { id: 'distribusi', label: 'Distribusi Telegram', ikon: 'kirim', izin: 'kirim_telegram' },
+    ],
+  },
+  {
+    grup: 'Kelola Sistem',
+    butir: [
+      /*
+         Dua butir gabungan sejak 23 September 2026 (pages/pengguna-data.js
+         dan pages/pemantauan-sistem.js). Pemantauan Sistem bersyarat
+         `kelola_aturan` karena Aturan Peringatan, yang dulu di grup Ruang
+         Analis, kini tabnya — analis melihat grup ini dengan satu butir,
+         dan tab Kesehatan Sistem tetap hanya bagi superadmin.
+      */
+      { id: 'pengguna-data', label: 'Pengguna & Data Induk', ikon: 'pengguna', izin: 'kelola_pengguna' },
+      { id: 'pemantauan-sistem', label: 'Pemantauan Sistem', ikon: 'kesehatan', izin: 'kelola_aturan' },
+    ],
+  },
+  {
+    grup: 'Panduan',
+    butir: [
+      { id: 'panduan', label: 'Panduan Penggunaan', ikon: 'info', izin: 'lihat_panduan' },
+    ],
+  },
+]
+
+/**
+ * Menu ruang wilayah — berdiri sendiri, bukan hasil saringan atas menu internal.
+ *
+ * Disusun sebagai daftar terpisah, bukan sebagai menu internal yang dipangkas,
+ * supaya butir internal baru tidak pernah bisa bocor ke ruang wilayah hanya
+ * karena seseorang lupa memberinya syarat izin.
+ *
+ * Formulir masukannya sengaja memakai halaman `input` yang sama dengan yang
+ * dipakai Operator Puldata. Satu borang, satu mesin klasifikasi, satu perilaku
+ * — dua salinan borang yang sama pasti berpisah cepat atau lambat.
+ */
+export const MENU_KANWIL = [
+  {
+    grup: 'Ruang Wilayah',
+    butir: [
+      { id: 'kanwil-dasbor', label: 'Ringkasan Wilayah', ikon: 'dasbor', izin: 'lihat_dasbor_wilayah' },
+      { id: 'input', label: 'Kirim Berita', ikon: 'tambah', izin: 'buat_berita' },
+      { id: 'wilayah-telaah', label: 'Telaah Wilayah', ikon: 'centang', izin: 'telaah_wilayah', lencana: 'telaahWilayah' },
+      { id: 'wilayah-berita', label: 'Berita Wilayah', ikon: 'berita', izin: 'lihat_berita_wilayah' },
+      // Seluruh unit yang dibawahi wilayah ini, bukan sepuluh teratas seperti
+      // di dasbor. Kantor wilayah bertanggung jawab atas setiap unitnya —
+      // termasuk yang tidak pernah muncul di daftar mana pun.
+      { id: 'wilayah-unit', label: 'Unit di Wilayah', ikon: 'peta', izin: 'lihat_unit_wilayah' },
+      { id: 'pengguna', label: 'Pengguna Wilayah', ikon: 'pengguna', izin: 'kelola_pengguna_wilayah' },
+    ],
+  },
+  {
+    grup: 'Panduan',
+    butir: [
+      { id: 'panduan', label: 'Panduan Penggunaan', ikon: 'info', izin: 'lihat_panduan' },
+    ],
+  },
+]
+
+/**
+ * Menu ruang unit — berdiri sendiri, dengan alasan yang sama seperti menu
+ * wilayah: butir baru di ruang lain tidak boleh bisa bocor ke sini hanya karena
+ * seseorang lupa memberinya syarat izin.
+ *
+ * Halaman telaahnya persis halaman yang dipakai kantor wilayah. Yang berbeda
+ * hanya cakupan datanya, dan cakupan itu ditentukan peladen — bukan halaman.
+ */
+export const MENU_UPT = [
+  {
+    grup: 'Ruang Unit',
+    butir: [
+      { id: 'upt-dasbor', label: 'Ringkasan Unit', ikon: 'dasbor', izin: 'lihat_dasbor_unit' },
+      { id: 'wilayah-telaah', label: 'Telaah & Tanggapan', ikon: 'centang', izin: 'telaah_wilayah', lencana: 'telaahWilayah' },
+      { id: 'wilayah-berita', label: 'Berita Unit', ikon: 'berita', izin: 'lihat_berita_unit' },
+    ],
+  },
+  {
+    grup: 'Panduan',
+    butir: [
+      { id: 'panduan', label: 'Panduan Penggunaan', ikon: 'info', izin: 'lihat_panduan' },
+    ],
+  },
+]
+
+export function menuUntuk(peran) {
+  const sumber = adalahUnit(peran) ? MENU_UPT
+    : adalahEksternal(peran) ? MENU_KANWIL
+      : MENU
+  return sumber
+    .map((g) => ({ ...g, butir: g.butir.filter((b) => punyaIzin(peran, b.izin)) }))
+    .filter((g) => g.butir.length)
+}
+
+/**
+ * Halaman pertama yang dibuka tiap peran setelah masuk.
+ *
+ * Diambil dari butir menu pertama yang benar-benar berhak dibuka, bukan dari
+ * nama halaman yang ditulis tangan. Nama yang ditulis tangan pernah ada di
+ * sini, dan ketika halamannya berganti nama, peran itu mendarat di layar
+ * "halaman tidak dikenali" tepat setelah berhasil masuk.
+ */
+export function halamanAwal(peran) {
+  const menu = menuUntuk(peran)
+  if (menu[0]?.butir[0]?.id) return menu[0].butir[0].id
+  if (adalahUnit(peran)) return 'upt-dasbor'
+  return adalahEksternal(peran) ? 'kanwil-dasbor' : 'dasbor'
+}
+
+/* ------------------------------------------------- hak membuka halaman */
+
+/**
+ * Halaman mana menuntut izin apa — diturunkan dari ketiga susunan menu di
+ * atas, bukan ditulis ulang di sini.
+ *
+ * Alasannya sama dengan alasan `halamanAwal` mengambil tujuannya dari menu:
+ * daftar yang ditulis tangan akan benar pada hari ia ditulis dan salah pada
+ * hari sebuah halaman berganti syarat izinnya, tanpa satu pun tanda bahwa ia
+ * sudah salah.
+ *
+ * Satu halaman bisa punya lebih dari satu syarat, dan itu bukan kelonggaran
+ * yang tidak disengaja: `input` dituntut `buat_berita` di ruang pusat maupun
+ * di ruang wilayah, sedangkan `pengguna` dituntut `kelola_pengguna` di pusat
+ * tetapi `kelola_pengguna_wilayah` di wilayah. Memenuhi salah satunya cukup —
+ * yang menahan datanya tetap RLS, bukan daftar ini.
+ */
+const SYARAT_HALAMAN = (() => {
+  const peta = new Map()
+  for (const menu of [MENU, MENU_KANWIL, MENU_UPT]) {
+    for (const grup of menu) {
+      for (const b of grup.butir) {
+        if (!peta.has(b.id)) peta.set(b.id, new Set())
+        peta.get(b.id).add(b.izin)
+      }
+    }
+  }
+  return peta
+})()
+
+/**
+ * Halaman yang tidak punya butir menu, tetapi tetap sah dibuka.
+ *
+ * Ketiadaan butir menu bukan ketiadaan hak. Detail berita dibuka dari Pusat
+ * Data Berita dan dari palet perintah; halaman profil milik siapa pun yang
+ * punya sesi, termasuk petugas daerah — karena itu syaratnya `null`, bukan
+ * sebuah nama izin.
+ *
+ * `berita-detail` sengaja hanya menuntut izin berita PUSAT. Peran daerah tidak
+ * diberi jalan ke sini, dan itu keputusan yang sudah diambil: halaman ini
+ * menampilkan `review_note` serta `verified_by` dari pusat, dan membukanya
+ * bagi daerah berarti melepas catatan analis pusat ke wilayah tanpa seorang
+ * pun memutuskannya.
+ */
+const SYARAT_TAMBAHAN = {
+  'berita-detail': 'lihat_berita',
+  profil: null,
+  /*
+     Dua halaman yang kehilangan butir menunya pada 23 September 2026, tetapi
+     tidak kehilangan haknya. Peringatan Dini lama tetap menjadi tujuan tombol
+     "Lihat semua" dan ubin "Perlu respons segera"; Peta Sebaran tetap menjadi
+     tujuan tombol di Tren dan kini juga tergambar di dasbor. Tanpa dua baris
+     ini, keduanya jatuh ke "halaman tidak dikenali" — yang dibalas true — dan
+     terbuka bagi peran yang dulu tidak berhak membukanya.
+  */
+  peringatan: 'lihat_peringatan',
+  peta: 'lihat_peta',
+  /*
+     Empat tab Analisis Pemberitaan, dengan izin yang sama persis dengan yang
+     dulu tertulis pada butir menunya masing-masing. Pusat Komando menumpang
+     izin dasbor karena isinya memang isi dasbor, disusun untuk dibaca dari
+     jarak tiga meter.
+  */
+  tren: 'lihat_tren',
+  narasi: 'lihat_tren',
+  jaringan: 'lihat_tren',
+  'profil-media': 'lihat_tren',
+  komando: 'lihat_dasbor',
+  /* Tab tiga menu gabungan lainnya, dan dua halaman yang kehilangan butir
+     menunya — semuanya dengan izin yang dulu tertulis pada butirnya. */
+  telaah: 'telaah_berita',
+  kasus: 'lihat_kasus',
+  aturan: 'kelola_aturan',
+  kesehatan: 'lihat_kesehatan',
+  /* Log Akses: tab di Pemantauan Sistem. Peran superadmin lolos di sini; yang
+     membatasinya hanya untuk Pemilik Sistem adalah syarat tab di
+     pages/pemantauan-sistem.js dan kebijakan baris di basis data. */
+  'log-akses': 'lihat_kesehatan',
+  'situation-room': 'lihat_lonjakan',
+  pengguna: 'kelola_pengguna',
+  koordinat: 'kelola_koordinat',
+  integrasi: 'kelola_integrasi',
+  audit: 'lihat_audit',
+  pemetaan: 'petakan_upt',
+  sinkronisasi: 'lihat_sinkronisasi',
+  /* Nama lama halaman berita daerah, dipertahankan untuk tautan tersimpan. */
+  'kanwil-riwayat': 'lihat_berita_wilayah',
+}
+
+/**
+ * Benar bila peran ini berhak membuka halaman itu.
+ *
+ * Dipakai di tiga tempat, dan ketiganya perlu: penjaga rute di main.js (untuk
+ * alamat yang diketik atau disalin), penyaring tombol sesudah halaman
+ * digambar (untuk tombol yang menjanjikan halaman yang tidak akan terbuka),
+ * dan halaman yang ingin menyembunyikan tombolnya sendiri lebih awal.
+ *
+ * Halaman yang tidak dikenali menghasilkan `true`, bukan `false`. Yang berhak
+ * menolaknya adalah penunjuk halaman dengan layar "halaman tidak dikenali"
+ * miliknya sendiri — kalau ditolak di sini, alamat yang salah ketik akan
+ * terbaca sebagai penolakan hak, dan yang membacanya akan mengira ia kurang
+ * izin padahal ia hanya salah mengetik.
+ */
+export function bolehBuka(peran, halaman) {
+  /*
+     Syarat tambahan DITAMBAHKAN pada syarat dari menu, bukan menggantikannya.
+
+     Sampai 23 September 2026 keduanya tidak pernah menyebut halaman yang
+     sama, sehingga bedanya tidak terlihat. Sejak alamat `pengguna` menjadi
+     tab di ruang pusat, ia muncul di dua tempat: `kelola_pengguna` di
+     SYARAT_TAMBAHAN, dan `kelola_pengguna_wilayah` dari MENU_KANWIL. Kalau
+     yang pertama menggantikan yang kedua, admin kanwil kehilangan halaman
+     Pengguna Wilayah-nya tanpa satu pun pesan galat.
+  */
+  const syarat = new Set(SYARAT_HALAMAN.get(halaman) || [])
+  if (Object.prototype.hasOwnProperty.call(SYARAT_TAMBAHAN, halaman)) {
+    if (SYARAT_TAMBAHAN[halaman] === null) return true
+    syarat.add(SYARAT_TAMBAHAN[halaman])
+  }
+  if (!syarat.size) return true
+  return [...syarat].some((izin) => punyaIzin(peran, izin))
+}

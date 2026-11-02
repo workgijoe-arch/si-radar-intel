@@ -1,0 +1,669 @@
+/**
+ * Peringatan Dini — situasi dalam satu layar.
+ *
+ * Bernama Ringkasan Pimpinan sampai 23 September 2026. Yang berganti hanya
+ * namanya di menu dan di bilah judul; isinya sengaja tetap. Kartu peringatan
+ * yang dulu punya halaman sendiri kini dibuka dari sini — lihat bukaPola().
+ *
+ * ---------------------------------------------------------------------------
+ * Kenapa halaman ini ada, dan kenapa ia baru ada sekarang
+ * ---------------------------------------------------------------------------
+ *
+ * Izin `lihat_briefing` sudah diberikan kepada lima peran di lib/peran.js sejak
+ * lama. Tidak ada satu pun butir menu dan tidak ada satu pun halaman yang
+ * memakainya — izin yang menganga tanpa pintu. Berkas ini menutup lubang itu.
+ *
+ * ---------------------------------------------------------------------------
+ * Untuk siapa, dan apa akibatnya pada isinya
+ * ---------------------------------------------------------------------------
+ *
+ * Pembacanya pimpinan yang punya enam puluh detik, bukan analis yang punya
+ * sore. Perbedaan itu menentukan tiga hal:
+ *
+ *   Tidak ada tabel. Tabel menuntut pembacanya menyaring sendiri, dan
+ *   menyaring adalah pekerjaan analis. Yang ada di sini kalimat, angka besar,
+ *   dan daftar pendek.
+ *
+ *   Setiap angka membawa pembandingnya. "Dua puluh empat kejadian mendesak"
+ *   tidak berarti apa-apa bagi orang yang tidak hafal angka pekan lalu, dan
+ *   tidak ada yang hafal angka pekan lalu.
+ *
+ *   Tidak ada satu angka pun yang dihitung di berkas ini. Seluruhnya dipinjam
+ *   dari lib/hitung.js, lib/peristiwa.js, lib/risiko.js, dan
+ *   lib/peringatan-laju.js — mesin yang sama yang dipakai dasbor, peringatan,
+ *   dan laporan berkala. Sebuah briefing pimpinan yang menyebut angka berbeda
+ *   dari layar yang dibaca stafnya adalah briefing yang akan dibantah di dalam
+ *   rapat, dan sesudah itu tidak akan dipercaya lagi.
+ *
+ * Susunannya mengikuti pasal 37 spesifikasi: Situasi, Temuan Kunci, Penilaian
+ * Risiko, Dampak, Tren, Rekomendasi.
+ */
+
+import { kartu, keping, kosong, tombol, pesanSistem, ubin } from '../ui/komponen.js'
+import {
+  amankan, angka, persen, delta, ringkas, tanggalPanjang, tanggal, jarakWaktu,
+  nadaUrgensi, hariWib,
+} from '../lib/format.js'
+
+import {
+  ringkasan, bandingPeriode, pergeseran, uptNaik, deretTren, dasar,
+} from '../lib/hitung.js'
+import { kelompokkanPeristiwa } from '../lib/peristiwa.js'
+import { peringkatRisiko } from '../lib/risiko.js'
+import { periksaLaju, rekapLaju, ATURAN } from '../lib/peringatan-laju.js'
+
+import { baganTren } from '../ui/bagan.js'
+import { kartuPeringatan } from './peringatan.js'
+import { punyaIzin } from '../lib/peran.js'
+import { ikon } from '../lib/ikon.js'
+
+/** Pilihan periode. Bertahan selama sesi. */
+const pilihan = { hari: 7, rapat: false }
+
+const PERIODE = [
+  { hari: 1, label: '24 jam' },
+  { hari: 7, label: '7 hari' },
+  { hari: 30, label: '30 hari' },
+]
+
+/**
+ * Tingkat risiko nasional — satu pernyataan di puncak layar.
+ *
+ * Diturunkan dari kejadian, bukan dari rerata skor. Rerata adalah cara
+ * tercepat membuat enam kejadian kritis menghilang di balik tiga ratus
+ * unggahan seremonial.
+ */
+function tingkatNasional({ kritis, mendesak, lajuKritis, peristiwaBerat }) {
+  if (kritis >= 3 || lajuKritis >= 2) {
+    return {
+      kode: 'Tinggi', nada: 'kritis',
+      ket: 'Ada beberapa kejadian yang menuntut respons segera secara bersamaan.',
+    }
+  }
+  if (kritis >= 1 || peristiwaBerat >= 3 || lajuKritis >= 1) {
+    return {
+      kode: 'Sedang', nada: 'tinggi',
+      ket: 'Ada kejadian berat yang sedang berjalan dan menuntut sikap resmi.',
+    }
+  }
+  if (mendesak >= 1) {
+    return {
+      kode: 'Rendah', nada: 'sedang',
+      ket: 'Ada isu yang perlu diawasi, belum ada yang menuntut tindakan hari ini.',
+    }
+  }
+  return {
+    kode: 'Tenang', nada: 'positif',
+    ket: 'Tidak ada kejadian mendesak pada periode ini.',
+  }
+}
+
+/** Kalimat pembanding: "naik 8 dari 16 pada periode sebelumnya". */
+function banding(kini, lalu, satuan) {
+  if (kini === lalu) return `sama dengan ${lalu} pada periode sebelumnya`
+  const arah = kini > lalu ? 'naik' : 'turun'
+  return `${arah} ${angka(Math.abs(kini - lalu))} ${satuan} dari ${angka(lalu)} pada periode sebelumnya`
+}
+
+export function halamanBriefing({ keadaan, isi }) {
+  const mulai = hariWib(-(pilihan.hari - 1))
+  const selesai = hariWib(0)
+
+  const semua = keadaan.berita || []
+  const b = bandingPeriode(semua, { mulai, selesai })
+  const periodeIni = b.daftarKini
+
+  const r = ringkasan(periodeIni)
+  const peristiwa = kelompokkanPeristiwa(dasar(periodeIni))
+  const peringkat = peringkatRisiko(peristiwa)
+  const laju = periksaLaju(semua)
+  const rekapL = rekapLaju(laju)
+
+  const peristiwaBerat = peringkat.filter((p) => p.skor >= 65).length
+  const nasional = tingkatNasional({
+    kritis: r.kritis.length,
+    mendesak: r.mendesak.length,
+    lajuKritis: rekapL.kritis,
+    peristiwaBerat,
+  })
+
+  const isuNaik = pergeseran(b.daftarKini, b.daftarLalu, 'subkategori', 5)
+    .filter((x) => x.delta > 0)
+  const unitNaik = uptNaik(semua, { mulai, selesai, maks: 5 })
+    .filter((u) => u.delta > 0)
+
+  if (!periodeIni.length) {
+    isi.innerHTML = kartu({
+      isi: kosong(
+        'Tidak ada pemberitaan pada periode ini',
+        `Tidak ada satu pun berita yang masuk himpunan hitung antara ${tanggal(mulai)} dan ${tanggal(selesai)}. `
+          + 'Perluas periodenya, atau periksa halaman Sinkronisasi Sumber untuk memastikan penjadwal berjalan.',
+        bilahPeriode(),
+      ),
+    })
+    pasangPenyimak(isi)
+    return { judul: 'Peringatan Dini', sub: 'Tidak ada data pada periode ini' }
+  }
+
+  if (pilihan.rapat) {
+    isi.innerHTML = tampilanRapat({ mulai, selesai, b, r, peristiwa, peringkat, nasional, unitNaik, isuNaik, rekapL })
+    pasangPenyimak(isi, { laju, peran: keadaan.profil?.role })
+    return { judul: 'Peringatan Dini', sub: `Mode Rapat · ${tanggal(mulai)} sampai ${tanggal(selesai)}` }
+  }
+
+  isi.innerHTML = `
+    <div class="tumpuk">
+
+      ${bilahPeriode()}
+
+      ${/* ------------------------------------------------------ I. situasi */''}
+      ${kartu({
+        judul: 'Situasi',
+        ket: `${tanggalPanjang(mulai)} sampai ${tanggalPanjang(selesai)}.`,
+        isi: `
+          <div class="brief-nasional" data-nada="${nasional.nada}">
+            <div>
+              <span class="label-mono">Tingkat risiko nasional</span>
+              <b>${amankan(nasional.kode)}</b>
+              <p>${amankan(nasional.ket)}</p>
+            </div>
+            <div class="brief-nasional-angka">
+              <div><b>${angka(r.kritis.length)}</b><span>kejadian kritis</span></div>
+              <div><b>${angka(peristiwaBerat)}</b><span>peristiwa berisiko tinggi</span></div>
+              <div><b>${angka(rekapL.total)}</b><span>pola terdeteksi</span></div>
+            </div>
+          </div>
+
+          <p class="brief-kalimat">
+            Pada periode ini terpantau <b>${angka(b.kini.publikasi)} publikasi</b> yang
+            dihitung — ${amankan(banding(b.kini.publikasi, b.lalu.publikasi, 'publikasi'))}.
+            Di antaranya <b>${angka(b.kini.negatif)} bersentimen negatif</b>
+            (${persen(b.kini.negatif, b.kini.publikasi)}),
+            ${amankan(banding(b.kini.negatif, b.lalu.negatif, 'publikasi'))}.
+            Publikasi itu mengelompok menjadi <b>${angka(peristiwa.length)} peristiwa</b>,
+            menyangkut <b>${angka(b.kini.unit)} unit</b> dan disiarkan
+            <b>${angka(b.kini.media)} media</b>.
+          </p>`,
+      })}
+
+      ${/* -------------------------------------------------- II. temuan kunci */''}
+      ${kartu({
+        judul: 'Temuan kunci',
+        ket: 'Lima peristiwa dengan skor risiko tertinggi pada periode ini.',
+        isi: peringkat.length
+          ? `<ol class="brief-temuan">
+               ${peringkat.slice(0, 5).map((p, i) => barisTemuan(p, i)).join('')}
+             </ol>`
+          : kosong('Tidak ada peristiwa negatif',
+              'Seluruh pemberitaan pada periode ini bersentimen positif atau netral.'),
+      })}
+
+      ${/* ------------------------------------------------ III. penilaian risiko */''}
+      ${kartu({
+        judul: 'Penilaian risiko',
+        /*
+           Satu-satunya bagian halaman ini yang TIDAK mengikuti periode di
+           atas, dan itu disebutkan terus terang. Tiap aturan punya jendela
+           waktunya sendiri — lonjakan membandingkan 24 jam, penumpukan
+           mengamati 30 hari — dan memaksanya mengikuti periode pilihan akan
+           membuat aturan lonjakan mustahil menyala pada periode "30 hari".
+        */
+        ket: 'Pola yang terdeteksi mesin, di luar penilaian berita satuan. '
+          + 'Tiap aturan memakai jendela waktunya sendiri, bukan periode yang dipilih di atas. '
+          + 'Tekan tingkat risikonya untuk membuka berita di balik pola itu.',
+        isi: laju.length
+          ? `<ul class="brief-pola">
+               ${laju.slice(0, 5).map((a, i) => `
+                 <li data-nada="${nadaUrgensi(a.tingkat)}">
+                   <button class="brief-risiko" data-pola="${i}"
+                     title="Buka berita di balik pola ini"
+                     aria-label="Risiko ${amankan(a.tingkat)}: buka ${angka((a.berita || []).length)} berita di balik pola ini">
+                     ${keping(a.tingkat, nadaUrgensi(a.tingkat), true)}
+                     ${ikon('panahKanan')}
+                   </button>
+                   <div>
+                     <b>${amankan(ATURAN[a.kode]?.nama || a.kode)}</b>
+                     <span>${amankan(ringkas(a.judul, 96))}</span>
+                     <em>${amankan(a.sebab)}</em>
+                   </div>
+                 </li>`).join('')}
+             </ul>
+             ${tombol({ label: 'Lihat semua peringatan', ikon: 'peringatan', halaman: 'peringatan' })}`
+          : pesanSistem('Tidak ada lonjakan, penyebaran ke banyak sumber, peristiwa berat yang '
+              + 'didiamkan, maupun penumpukan pelan di satu unit.', 'positif', 'centang'),
+      })}
+
+      <div class="kisi kisi-utama-samping">
+        <div class="tumpuk">
+
+          ${/* --------------------------------------------------------- V. tren */''}
+          ${kartu({
+            judul: 'Tren',
+            ket: 'Publikasi harian dan bagian negatifnya.',
+            isi: `<div id="brief-bagan" class="brief-bagan"></div>`,
+          })}
+
+          ${/* ------------------------------------------------ VI. rekomendasi */''}
+          ${kartu({
+            judul: 'Rekomendasi',
+            ket: 'Disusun dari keadaan di atas, bukan dari penilaian bebas.',
+            isi: `<ol class="brief-rekomendasi">
+                    ${rekomendasi({ r, peringkat, laju, unitNaik, nasional })
+                      .map((k) => `<li>${k}</li>`).join('')}
+                  </ol>`,
+          })}
+        </div>
+
+        <div class="tumpuk">
+
+          ${/* ------------------------------------------------------ IV. dampak */''}
+          ${kartu({
+            judul: 'Dampak',
+            ket: 'Ke mana beban pemberitaan jatuh.',
+            isi: `
+              <div class="kisi kisi-2" style="margin-bottom:14px">
+                ${ubin({ label: 'Perlu respons segera', nilai: r.mendesak.length,
+                  nada: r.mendesak.length ? 'kritis' : 'netral',
+                  kaki: banding(b.kini.mendesak, b.lalu.mendesak, 'publikasi'),
+                  halaman: 'peringatan' })}
+                ${ubin({ label: 'Unit terdampak', nilai: b.kini.unit, nada: 'aksen',
+                  delta: delta(b.kini.unit, b.lalu.unit), kaki: 'dibanding periode lalu',
+                  halaman: 'peta' })}
+              </div>
+
+              ${unitNaik.length ? `
+                <span class="label-mono">Unit yang naik ke permukaan</span>
+                <ul class="brief-daftar">
+                  ${unitNaik.map((u) => `
+                    <li>
+                      <span>${amankan(u.nama)}</span>
+                      <b>${angka(u.jumlah)}</b>
+                      <i class="naik">+${angka(u.delta)}</i>
+                    </li>`).join('')}
+                </ul>` : ''}
+
+              ${isuNaik.length ? `
+                <span class="label-mono" style="margin-top:14px;display:block">Isu yang menanjak</span>
+                <ul class="brief-daftar">
+                  ${isuNaik.map((x) => `
+                    <li>
+                      <span>${amankan(x.nama)}</span>
+                      <b>${angka(x.jumlah)}</b>
+                      <i class="naik">+${angka(x.delta)}</i>
+                    </li>`).join('')}
+                </ul>` : ''}
+
+              ${!unitNaik.length && !isuNaik.length
+                ? pesanSistem('Tidak ada unit maupun isu yang naik dibanding periode sebelumnya.',
+                    'positif', 'centang') : ''}`,
+          })}
+
+          ${kartu({
+            judul: 'Cara membaca',
+            isi: `
+              <div class="brief-catatan">
+                <p><b>Peristiwa, bukan publikasi.</b> Delapan berita tentang satu kejadian
+                   adalah satu peristiwa dengan eksposur besar. Jumlah peristiwa menentukan
+                   berapa banyak yang harus ditangani; jumlah publikasi menentukan seberapa
+                   keras tekanan opininya.</p>
+                <p><b>Skor risiko dihitung, bukan dinilai.</b> Enam faktor berbobot tetap,
+                   dan rinciannya bisa dibuka pada halaman detail tiap berita.</p>
+                <p><b>Belum tentu sudah diverifikasi.</b> Peristiwa yang beritanya masih
+                   berstatus awal ikut dihitung di sini. Yang sudah dinyatakan tidak valid
+                   oleh analis tidak.</p>
+              </div>`,
+          })}
+        </div>
+      </div>
+
+      <p class="brief-kaki">
+        Disusun otomatis ${amankan(tanggalPanjang(new Date()))} dari
+        ${angka(semua.length)} baris arsip yang tersedia bagi Anda.
+        ${keadaan.demo ? 'Data peragaan — seluruh unit, media, dan kejadian di dalamnya fiktif.' : ''}
+      </p>
+    </div>`
+
+  const wadah = isi.querySelector('#brief-bagan')
+  if (wadah) baganTren(wadah, deretTren(periodeIni, { mulai, selesai }))
+
+  pasangPenyimak(isi, { laju, peran: keadaan.profil?.role })
+
+  return {
+    judul: 'Peringatan Dini',
+    sub: `Risiko nasional ${nasional.kode} · ${tanggal(mulai)} – ${tanggal(selesai)}`,
+  }
+}
+
+/* ------------------------------------------------------------------ bagian */
+
+function bilahPeriode() {
+  return `
+    <div class="brief-periode">
+      <span class="label-mono">Periode</span>
+      ${PERIODE.map((p) => `
+        <button class="tbl kecil${p.hari === pilihan.hari ? ' utama' : ''}"
+          data-periode="${p.hari}">${amankan(p.label)}</button>`).join('')}
+      <span class="dorong baris gap-6 brief-alat">
+        <button class="tbl kecil${pilihan.rapat ? ' utama' : ''}" data-aksi="mode-rapat"
+          aria-pressed="${pilihan.rapat ? 'true' : 'false'}"
+          title="Tampilan tabel yang ringkas untuk dibahas bersama">${ikon('arsip')}Mode Rapat</button>
+        <button class="tbl kecil" data-aksi="unduh-pdf"
+          title="Buka dialog cetak; pilih Simpan sebagai PDF">${ikon('unduh')}Unduh PDF</button>
+      </span>
+    </div>`
+}
+
+/**
+ * Mode Rapat — tampilan tabel.
+ *
+ * Briefing biasa tidak memakai tabel dengan sengaja: pembacanya pimpinan yang
+ * punya enam puluh detik. Rapat berbeda. Beberapa orang membaca layar yang sama
+ * dan menunjuk baris yang sama, dan untuk itu tabel lebih berguna daripada
+ * kalimat. Angkanya tidak dihitung ulang di sini; semuanya berasal dari
+ * variabel yang sama dengan tampilan biasa, jadi kedua tampilan tidak bisa
+ * berselisih.
+ */
+function tampilanRapat({ mulai, selesai, b, r, peristiwa, peringkat, nasional, unitNaik, isuNaik, rekapL }) {
+  return `
+    <div class="tumpuk brief-rapat">
+      ${bilahPeriode()}
+
+      ${kartu({
+        judul: 'Ringkasan situasi',
+        ket: `${tanggalPanjang(mulai)} sampai ${tanggalPanjang(selesai)}.`,
+        rapat: true,
+        isi: `
+          <div class="tabel-bungkus">
+            <table class="tabel">
+              <thead><tr><th>Ukuran</th><th class="rata-kanan">Periode ini</th><th class="rata-kanan">Periode lalu</th></tr></thead>
+              <tbody>
+                <tr><td>Tingkat risiko nasional</td><td class="rata-kanan" colspan="2"><b>${amankan(nasional.kode)}</b></td></tr>
+                <tr><td>Publikasi dihitung</td><td class="rata-kanan angka">${angka(b.kini.publikasi)}</td><td class="rata-kanan angka">${angka(b.lalu.publikasi)}</td></tr>
+                <tr><td>Bersentimen negatif</td><td class="rata-kanan angka">${angka(b.kini.negatif)}</td><td class="rata-kanan angka">${angka(b.lalu.negatif)}</td></tr>
+                <tr><td>Peristiwa</td><td class="rata-kanan angka">${angka(peristiwa.length)}</td><td class="rata-kanan angka">—</td></tr>
+                <tr><td>Kejadian kritis</td><td class="rata-kanan angka">${angka(r.kritis.length)}</td><td class="rata-kanan angka">—</td></tr>
+                <tr><td>Pola terdeteksi</td><td class="rata-kanan angka">${angka(rekapL.total)}</td><td class="rata-kanan angka">—</td></tr>
+                <tr><td>Unit tersentuh</td><td class="rata-kanan angka">${angka(b.kini.unit)}</td><td class="rata-kanan angka">${angka(b.lalu.unit)}</td></tr>
+                <tr><td>Media</td><td class="rata-kanan angka">${angka(b.kini.media)}</td><td class="rata-kanan angka">${angka(b.lalu.media)}</td></tr>
+              </tbody>
+            </table>
+          </div>`,
+      })}
+
+      ${kartu({
+        judul: 'Peristiwa berisiko tertinggi',
+        ket: 'Lima belas peristiwa dengan skor tertinggi pada periode ini.',
+        rapat: true,
+        isi: peringkat.length ? `
+          <div class="tabel-bungkus">
+            <table class="tabel">
+              <thead><tr>
+                <th>No</th><th>Peristiwa</th><th>Unit</th>
+                <th class="rata-kanan">Terbitan</th><th class="rata-kanan">Media</th>
+                <th class="rata-kanan">Skor</th><th>Tingkat</th>
+              </tr></thead>
+              <tbody>
+                ${peringkat.slice(0, 15).map((p, i) => `
+                  <tr>
+                    <td class="angka">${i + 1}</td>
+                    <td>
+                      <button class="brief-temuan-judul" data-buka="${amankan(p.peristiwa.publikasi[0]?.id || '')}">
+                        ${amankan(ringkas(p.peristiwa.judul || 'Tanpa judul', 100))}</button>
+                    </td>
+                    <td class="kecil">${amankan(p.peristiwa.nama_upt || 'Belum terpetakan')}</td>
+                    <td class="rata-kanan angka">${angka(p.peristiwa.jumlah_publikasi)}</td>
+                    <td class="rata-kanan angka">${angka(p.peristiwa.jumlah_media)}</td>
+                    <td class="rata-kanan angka">${angka(p.skor)}</td>
+                    <td>${keping(p.tingkat.kode, p.tingkat.nada, true)}</td>
+                  </tr>`).join('')}
+              </tbody>
+            </table>
+          </div>`
+          : `<div style="padding:18px">${kosong('Tidak ada peristiwa negatif',
+            'Seluruh pemberitaan pada periode ini bersentimen positif atau netral.')}</div>`,
+      })}
+
+      <div class="kisi kisi-2">
+        ${kartu({
+          judul: 'Unit dengan pemberitaan terbanyak',
+          rapat: true,
+          isi: unitNaik.length ? `
+            <div class="tabel-bungkus"><table class="tabel">
+              <thead><tr><th>Unit</th><th class="rata-kanan">Berita</th><th class="rata-kanan">Periode lalu</th><th class="rata-kanan">Selisih</th></tr></thead>
+              <tbody>${unitNaik.map((u) => `
+                <tr><td class="kecil">${amankan(u.nama)}</td>
+                  <td class="rata-kanan angka">${angka(u.jumlah)}</td>
+                  <td class="rata-kanan angka">${angka(u.sebelum)}</td>
+                  <td class="rata-kanan angka">${u.delta > 0 ? '+' : ''}${angka(u.delta)}</td></tr>`).join('')}
+              </tbody></table></div>`
+            : `<div style="padding:18px" class="mini-teks samar-teks">Tidak ada unit yang naik dibanding periode lalu.</div>`,
+        })}
+        ${kartu({
+          judul: 'Isu yang naik',
+          rapat: true,
+          isi: isuNaik.length ? `
+            <div class="tabel-bungkus"><table class="tabel">
+              <thead><tr><th>Isu</th><th class="rata-kanan">Berita</th><th class="rata-kanan">Periode lalu</th><th class="rata-kanan">Selisih</th></tr></thead>
+              <tbody>${isuNaik.map((x) => `
+                <tr><td class="kecil">${amankan(x.nama)}</td>
+                  <td class="rata-kanan angka">${angka(x.jumlah)}</td>
+                  <td class="rata-kanan angka">${angka(x.sebelum)}</td>
+                  <td class="rata-kanan angka">+${angka(x.delta)}</td></tr>`).join('')}
+              </tbody></table></div>`
+            : `<div style="padding:18px" class="mini-teks samar-teks">Tidak ada isu yang naik dibanding periode lalu.</div>`,
+        })}
+      </div>
+    </div>`
+}
+
+function barisTemuan(p, i) {
+  const { peristiwa: e, skor, tingkat } = p
+  return `
+    <li>
+      <span class="brief-nomor">${String(i + 1).padStart(2, '0')}</span>
+      <div class="brief-temuan-isi">
+        <button class="brief-temuan-judul" data-buka="${amankan(e.publikasi[0]?.id || '')}"
+          title="Buka detail berita ini">${amankan(ringkas(e.judul || 'Tanpa judul', 118))}</button>
+        <span class="brief-temuan-meta">
+          ${amankan(e.nama_upt || 'Unit belum terpetakan')}
+          · ${angka(e.jumlah_publikasi)} terbitan di ${angka(e.jumlah_media)} media
+          · ${amankan(jarakWaktu(e.tanggal_terakhir))}
+        </span>
+      </div>
+      <div class="brief-temuan-skor">
+        ${keping(tingkat.kode, tingkat.nada, true)}
+        <b>${angka(skor)}</b>
+      </div>
+    </li>`
+}
+
+/**
+ * Rekomendasi.
+ *
+ * Diturunkan dari keadaan, bukan dikarang. Setiap kalimat di bawah punya
+ * syarat yang bisa diperiksa, dan tidak muncul ketika syaratnya tidak
+ * terpenuhi. Alasannya sederhana: rekomendasi yang selalu sama akan berhenti
+ * dibaca setelah briefing ketiga.
+ *
+ * Yang sengaja TIDAK dilakukan berkas ini: menyarankan tindakan terhadap orang
+ * — memeriksa seseorang, menonaktifkan seseorang, menindak seseorang. Sistem
+ * ini memantau pemberitaan; ia tidak pernah membuktikan siapa pun bersalah,
+ * dan rekomendasi yang melangkah ke sana akan dikutip sebagai temuan.
+ */
+function rekomendasi({ r, peringkat, laju, unitNaik, nasional }) {
+  const daftar = []
+
+  const kritis = peringkat.filter((p) => p.skor >= 75)
+  if (kritis.length) {
+    daftar.push(`<b>Minta laporan lapangan atas ${angka(kritis.length)} peristiwa berskor kritis.</b>
+      Skor setinggi itu berarti kabarnya sudah menyebar dan belum diimbangi keterangan resmi;
+      yang dibutuhkan lebih dulu adalah fakta dari unitnya, bukan sikap.`)
+  }
+
+  const diam = laju.filter((a) => a.kode === 'diam')
+  if (diam.length) {
+    daftar.push(`<b>Tetapkan tenggat sikap resmi untuk ${angka(diam.length)} peristiwa yang belum ditanggapi.</b>
+      Sepuluh poin dari skor tiap peristiwa itu semata-mata karena belum ada tanggapan —
+      dan itu satu-satunya bagian skor yang bisa diturunkan tanpa menunggu pemberitaan mereda.`)
+  }
+
+  const menumpuk = laju.filter((a) => a.kode === 'menumpuk')
+  if (menumpuk.length) {
+    daftar.push(`<b>Periksa pola di ${menumpuk.map((a) => amankan(a.unit)).join(', ')}.</b>
+      Tidak satu pun beritanya cukup berat untuk berdiri sendiri, dan justru itu sebabnya
+      pola ini tidak pernah muncul di daftar peringatan mana pun sebelum hari ini.`)
+  }
+
+  if (unitNaik.length) {
+    const u = unitNaik[0]
+    daftar.push(`<b>Perhatikan ${amankan(u.nama)}.</b> Naik ${angka(u.delta)} publikasi
+      dibanding periode sebelumnya — kenaikan terbesar di antara seluruh unit pada periode ini.`)
+  }
+
+  if (r.antrean.length > 20) {
+    daftar.push(`<b>Percepat telaah ${angka(r.antrean.length)} berita yang mengantre.</b>
+      Selama belum ditelaah, klasifikasinya masih penilaian mesin — dan penilaian mesin
+      belum boleh menjadi dasar keputusan.`)
+  }
+
+  if (r.takTerpetakan.length > 10) {
+    daftar.push(`<b>Petakan ${angka(r.takTerpetakan.length)} berita yang belum punya unit.</b>
+      Berita negatif tanpa unit tidak bisa ditindaklanjuti kepada siapa pun, dan tidak
+      muncul pada peta sebaran maupun peringatan berbasis unit.`)
+  }
+
+  if (!daftar.length) {
+    daftar.push(`<b>Lanjutkan pemantauan berkala.</b> Tingkat risiko nasional
+      ${amankan(nasional.kode.toLowerCase())}, dan tidak ada pola yang menuntut tindakan
+      di luar rutinitas pada periode ini.`)
+  }
+
+  return daftar
+}
+
+/* ---------------------------------------------------------------- penyimak */
+
+/**
+ * Kartu peringatan di balik satu pola, dalam satu jendela.
+ *
+ * Pola hanya menyebut judul contoh dan sebabnya. Yang dibutuhkan pembacanya
+ * sesudah itu selalu sama: berita mana saja, dari media apa, dan apa yang bisa
+ * dilakukan sekarang — tiga hal yang sudah dijawab kartu Peringatan Dini. Maka
+ * kartu itulah yang dibuka, bukan tampilan baru yang lambat laun berbeda.
+ *
+ * Kartu tidak digambar di dalam `isi`, jadi tombol di dalamnya tidak ikut
+ * disapu `saringTombolTakBerhak()`. Karena itu hak tombol Telaah dan Jadikan
+ * kasus diputuskan di sini, dengan izin yang sama persis dengan halaman
+ * Daftar Peringatan; penjaga acara `buka-halaman` di main.js tetap menjadi
+ * lapis terakhirnya.
+ */
+function bukaPola(a, peran) {
+  const asal = document.activeElement
+  const berita = (a.berita || []).slice(0, 12)
+  const sisa = (a.berita || []).length - berita.length
+  const bolehTelaah = punyaIzin(peran, 'telaah_berita')
+  const bolehKasus = punyaIzin(peran, 'kelola_kasus')
+
+  const tirai = document.createElement('div')
+  tirai.className = 'tirai'
+  tirai.innerHTML = `
+    <div class="sembul sembul-lebar" role="dialog" aria-modal="true" aria-labelledby="pola-judul">
+      <header class="sembul-kop">
+        ${keping(a.tingkat, nadaUrgensi(a.tingkat))}
+        <h2 id="pola-judul">${amankan(ATURAN[a.kode]?.nama || a.kode)}</h2>
+        <button class="tbl ikon kecil dorong" data-tutup title="Tutup" aria-label="Tutup">${ikon('tutup')}</button>
+      </header>
+      <div class="sembul-isi tumpuk">
+        <p class="kecil-teks samar-teks" style="line-height:1.5">${amankan(a.sebab)}</p>
+        ${berita.length
+          ? `<div class="kisi kisi-kartu">
+               ${berita.map((b) => kartuPeringatan(b, bolehTelaah, bolehKasus)).join('')}
+             </div>
+             ${sisa > 0 ? `<p class="mini-teks samar-teks">dan ${angka(sisa)} terbitan lain pada pola yang sama.</p>` : ''}`
+          : kosong('Tidak ada berita tercatat', 'Pola ini tidak membawa daftar beritanya.')}
+      </div>
+    </div>`
+
+  const tutup = () => {
+    tirai.remove()
+    document.removeEventListener('keydown', kunci, true)
+    if (asal?.isConnected) asal.focus({ preventScroll: true })
+  }
+
+  // Jerat Tab dan Escape, dengan alasan yang sama seperti konfirmasi() di
+  // ui/komponen.js: tanpa jerat, Tab berpindah ke tombol di balik tirai.
+  const kunci = (e) => {
+    if (e.key === 'Escape') { e.preventDefault(); tutup(); return }
+    if (e.key !== 'Tab') return
+    const dapat = [...tirai.querySelectorAll('button, a[href]')]
+    if (!dapat.length) return
+    const awal = dapat[0]
+    const akhir = dapat[dapat.length - 1]
+    if (e.shiftKey && document.activeElement === awal) { e.preventDefault(); akhir.focus() }
+    else if (!e.shiftKey && document.activeElement === akhir) { e.preventDefault(); awal.focus() }
+    else if (!tirai.contains(document.activeElement)) { e.preventDefault(); awal.focus() }
+  }
+
+  tirai.addEventListener('click', (e) => {
+    if (e.target === tirai || e.target.closest('[data-tutup]')) { tutup(); return }
+
+    // Tujuannya sama dengan tombol yang sama di halaman Daftar Peringatan:
+    // Telaah membawa beritanya ke kepala antrean, Jadikan kasus membuka Kasus
+    // Intelijen dengan peristiwa itu terpilih.
+    const telaah = e.target.closest('[data-aksi="telaah"]')
+    const kasus = e.target.closest('[data-aksi="jadikan-kasus"]')
+    const sasaran = telaah || kasus
+    if (!sasaran) return
+    tutup()
+    document.dispatchEvent(new CustomEvent('buka-halaman', {
+      detail: { halaman: telaah ? 'telaah' : 'kasus', fokus: sasaran.dataset.id },
+    }))
+  })
+
+  document.addEventListener('keydown', kunci, true)
+  document.body.appendChild(tirai)
+  tirai.querySelector('[data-tutup]').focus()
+}
+
+function pasangPenyimak(isi, { laju = [], peran } = {}) {
+  isi.addEventListener('click', (ev) => {
+    const pola = ev.target.closest('[data-pola]')?.dataset.pola
+    if (pola != null) {
+      const a = laju[Number(pola)]
+      if (a) bukaPola(a, peran)
+      return
+    }
+
+    const aksi = ev.target.closest('[data-aksi]')?.dataset.aksi
+    if (aksi === 'mode-rapat') {
+      pilihan.rapat = !pilihan.rapat
+      isi.dispatchEvent(new CustomEvent('gambar-ulang', { bubbles: true }))
+      return
+    }
+    if (aksi === 'unduh-pdf') {
+      /*
+         Dialog cetak peramban, dengan "Simpan sebagai PDF" sebagai tujuan.
+         Cara ini dipilih daripada membangun PDF sendiri karena hasilnya selalu
+         sama dengan yang tampak di layar, dan tidak menambah satu pun
+         pustaka ke aplikasi yang sengaja tanpa pihak ketiga.
+      */
+      window.print()
+      return
+    }
+
+    const periode = ev.target.closest('[data-periode]')?.dataset.periode
+    if (periode) {
+      pilihan.hari = Number(periode)
+      isi.dispatchEvent(new CustomEvent('gambar-ulang', { bubbles: true }))
+      return
+    }
+
+    const buka = ev.target.closest('[data-buka]')?.dataset.buka
+    if (buka) {
+      document.dispatchEvent(new CustomEvent('buka-halaman', {
+        detail: { halaman: 'berita-detail', fokus: buka },
+      }))
+    }
+  })
+}
+
