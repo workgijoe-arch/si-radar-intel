@@ -179,12 +179,25 @@ const PUSAT = {
     catatan: 'Putusan tidak bisa dicabut. Yang keliru dikoreksi dengan putusan baru, dan '
       + 'keduanya tetap terbaca berdampingan.',
   },
-  tindak: {
-    isi: 'Butir pekerjaan turunan putusan pimpinan, beserta pelaksana, tenggat, dan '
-      + 'kemajuannya. Yang lewat tenggat diangkat ke kelompoknya sendiri di puncak halaman.',
-    guna: 'Menjawab apa yang diputuskan tiga minggu lalu sudah dikerjakan atau belum — '
-      + 'pertanyaan yang sebelumnya hanya bisa dijawab dengan menelepon.',
-    catatan: 'Kemajuan diisi pelaksananya, bukan dihitung sistem.',
+  'analisis-berita': {
+    isi: 'Analisis kasus per kasus. Pilih satu berita negatif — daftarnya dikelompokkan per '
+      + 'kanwil — lalu lengkapi fakta 5W1H, analisis, prakiraan, rekomendasi, dan evaluasi '
+      + 'SIP. Tentukan tujuannya: Klarifikasi UPT, Tindak lanjut disposisi pimpinan, atau keduanya.',
+    guna: 'Hasilnya langsung masuk Tindak Lanjut dan grup Telegram kanwil diberi tahu otomatis. '
+      + 'Klarifikasi dari pusat menunggu kanwil meneruskannya ke UPT.',
+    catatan: 'Klarifikasi hanya bisa diminta untuk berita yang sudah terpetakan ke UPT. '
+      + 'Menganalisis ulang berita yang sama memperbarui analisisnya, bukan membuat permintaan kedua.',
+  },
+  'tindak-lanjut': {
+    isi: 'Tiga tab. Klarifikasi UPT: permintaan klarifikasi per kanwil, siapa yang belum dan '
+      + 'sudah menginput, berkasnya, dan penilaiannya. Disposisi Pimpinan: disposisi yang dicatat, '
+      + 'dikerjakan, dan dilaporkan hasilnya. Tindak Lanjut Kasus: butir turunan putusan pimpinan '
+      + 'atas kasus intelijen, lengkap dengan pelaksana dan tenggat.',
+    guna: 'Menjawab apakah UPT sudah menjawab pemberitaan tentang dirinya, dan apakah yang '
+      + 'diputuskan pimpinan sudah dikerjakan — tanpa menelepon.',
+    catatan: 'Klarifikasi wajib berupa PDF atau DOCX dan wajib menyebut nama serta jabatan '
+      + 'pengirimnya. Pengingat UPT yang belum menginput dikirim ke grup Telegram kanwil pukul '
+      + '08.00 dan 14.00 WIB.',
   },
   laporan: {
     isi: 'Dua keluaran untuk periode yang sama. Pertama, laporan intelijen berkala: pilih '
@@ -252,6 +265,30 @@ const PUSAT = {
 /* ------------------------------------------------------------- ruang wilayah */
 
 const WILAYAH = {
+  dasbor: {
+    isi: 'Dasbor Eksekutif yang sama dengan pusat, berisi berita UPT di wilayah Anda saja: '
+      + 'angka sebulan, isu teratas, unit yang diberitakan negatif, dan kotak Cari UPT.',
+    guna: 'Layar pertama setelah masuk. Berita dihitung milik wilayah Anda bila datang dari '
+      + 'lembar kanwil Anda, atau bila UPT-nya tercatat di bawah kanwil Anda di data induk.',
+    catatan: 'Pembatasannya dilakukan peladen, bukan halaman: berita wilayah lain tidak pernah '
+      + 'sampai ke peramban Anda.',
+  },
+  'analisis-berita': {
+    isi: 'Analisis kasus per kasus atas berita negatif di wilayah Anda. Pilih satu berita, '
+      + 'lengkapi fakta 5W1H dan penilaiannya, lalu teruskan sebagai Klarifikasi UPT dan/atau '
+      + 'Tindak lanjut disposisi pimpinan.',
+    guna: 'Klarifikasi yang Anda buat langsung diteruskan ke UPT-nya; UPT melihatnya di menu '
+      + 'Klarifikasi UPT dan grup Telegram kanwil diberi tahu.',
+    catatan: 'UPT hanya bisa menjawab bila sudah punya akun penelaah unit — terbitkan di Pengguna Wilayah.',
+  },
+  'tindak-lanjut': {
+    isi: 'Klarifikasi UPT dan Disposisi Pimpinan untuk wilayah Anda. Teruskan permintaan dari '
+      + 'pusat ke UPT, nilai berkas klarifikasi yang masuk (terima atau kembalikan), dan catat '
+      + 'disposisi pimpinan beserta hasilnya.',
+    guna: 'Satu tempat untuk melihat UPT mana yang belum menginput klarifikasi dan mana yang sudah.',
+    catatan: 'Admin kanwil boleh mengunggah klarifikasi atas nama UPT bila perlu; namanya tetap '
+      + 'tercatat sebagai pengunggah.',
+  },
   'kanwil-dasbor': {
     isi: 'Empat ubin di puncak — berita wilayah, yang perlu respons segera, yang menunggu '
       + 'telaah Anda, dan yang menunggu telaah pusat — lalu empat belas hari terakhir '
@@ -314,6 +351,13 @@ const WILAYAH = {
 /* ---------------------------------------------------------------- ruang unit */
 
 const UNIT = {
+  klarifikasi: {
+    isi: 'Pemberitaan negatif tentang unit Anda yang diminta klarifikasinya oleh kanwil, beserta '
+      + 'instruksi dan batas waktunya.',
+    guna: 'Unggah berkas klarifikasi (PDF atau DOCX, paling besar 10 MB), isi nama dan jabatan '
+      + 'pengirim, lalu kirim. Kanwil dan pusat langsung diberi tahu.',
+    catatan: 'Klarifikasi yang dikembalikan kanwil muncul lagi dengan catatan perbaikannya.',
+  },
   'upt-dasbor': {
     isi: 'Empat ubin di puncak — berita unit ini, yang perlu respons segera, yang menunggu '
       + 'telaah Anda, dan yang belum ditanggapi — lalu empat belas hari terakhir sebagai '
@@ -619,10 +663,17 @@ export const LANGKAH = {
     'Centang rekomendasi yang disetujui. Menyetujui sebagian saja adalah putusan yang sah.',
     'Simpan putusan. Putusan tidak bisa dicabut; yang keliru dikoreksi dengan putusan baru.',
   ],
-  tindak: [
-    'Buka Tindak Lanjut untuk melihat butir pekerjaan turunan putusan pimpinan, beserta pelaksana dan tenggatnya.',
-    'Butir yang lewat tenggat diangkat ke kelompoknya sendiri di puncak halaman; mulai dari sana.',
-    'Pelaksana memperbarui kemajuan butirnya sendiri; sistem tidak menghitungnya.',
+  'analisis-berita': [
+    'Buka Analisis Berita. Pusat melihat berita negatif dikelompokkan per kanwil; kanwil melihat berita wilayahnya.',
+    'Pilih satu berita. Lengkapi fakta 5W1H, analisis, prakiraan, dan rekomendasi; periksa evaluasi sumber dan informasinya.',
+    'Centang tujuannya: Klarifikasi UPT (isi instruksi dan batas waktu) dan/atau Tindak lanjut disposisi pimpinan.',
+    'Tekan Simpan analisis & teruskan. Hasilnya muncul di Tindak Lanjut dan grup Telegram kanwil diberi tahu.',
+  ],
+  'tindak-lanjut': [
+    'Buka Tindak Lanjut lalu pilih tab Klarifikasi UPT, Disposisi Pimpinan, atau Tindak Lanjut Kasus.',
+    'Klarifikasi dari pusat: kanwil menekan Teruskan ke UPT. UPT mengunggah PDF/DOCX beserta nama dan jabatan pengirim.',
+    'Klarifikasi yang masuk dinilai: Terima, atau Kembalikan dengan catatan perbaikan.',
+    'Disposisi: catat pimpinan dan isi disposisinya, laporkan kemajuannya, lalu Tandai selesai.',
   ],
   laporan: [
     'Buka Laporan Berkala. Pilih jenis laporan: Harian, Mingguan, atau Bulanan; tanggalnya terisi otomatis.',
