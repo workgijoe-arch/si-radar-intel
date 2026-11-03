@@ -82,9 +82,9 @@ export const KONFIG = {
      pernah dihuni siapa pun hanya membuat pembacanya bertanya-tanya apakah
      mereka salah masuk. Peran daerah yang kelak diterbitkan tetap melihat
      ruangnya sendiri; yang disembunyikan hanya ruang yang bukan miliknya.
-     Isi lengkapnya: ['pusat', 'wilayah', 'unit'] (nilai di Trans-Siber PAS).
+     Nilai yang dipakai: semua ruang, seperti di Trans-Siber PAS. Untuk hanya ruang pusat: ['pusat'].
   */
-  ruangPanduan: ['pusat'],
+  ruangPanduan: ['pusat', 'wilayah', 'unit'],
 
   instansi: 'Direktorat Pengamanan dan Intelijen',
   /**
