@@ -319,8 +319,11 @@ export function hariBerita(b) {
  * @param {object[]} daftar berita mentah; himpunan dasarnya dihitung di sini
  * @param {{mulai:string, selesai:string, maks?:number}} rentang ISO, inklusif
  */
-export function uptNaik(daftar = [], { mulai, selesai, maks = 10 } = {}) {
-  const inti = dasar(daftar)
+export function uptNaik(daftar = [], { mulai, selesai, maks = 10, hanyaNegatif = false } = {}) {
+  // `hanyaNegatif` dipakai Peta Kerawanan: unit yang "mencuat" adalah unit yang
+  // berita NEGATIFNYA naik, bukan yang pemberitaannya naik oleh siaran humas.
+  // Tanpa opsi ini perilaku lama tidak berubah sama sekali.
+  const inti = dasar(daftar).filter((b) => !hanyaNegatif || ember(b) === 'negatif')
   if (!mulai || !selesai) return []
 
   const satuHari = 86_400_000

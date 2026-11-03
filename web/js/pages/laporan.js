@@ -21,7 +21,11 @@ import { ember } from '../lib/sentimen.js'
 import { dasar } from '../lib/hitung.js'
 import { ikon } from '../lib/ikon.js'
 import { baganUptMuncul } from '../ui/bagan.js'
-import { uptNaik } from '../lib/hitung.js'
+import { uptNaik, hariBerita } from '../lib/hitung.js'
+import { ekspor, KOLOM_BERITA } from '../lib/ekspor.js'
+import { punyaIzin } from '../lib/peran.js'
+import { sarankanTindak } from '../lib/tindak-lanjut.js'
+import { muatKeputusan, keputusanSaatIni } from '../lib/keputusan-tindak.js'
 
 /** Pilihan periode yang bertahan selama sesi. */
 const pilihan = { jenis: 'mingguan', mulai: '', selesai: '', hasil: null, sibuk: false }
@@ -107,6 +111,86 @@ function unduh() {
   // menahan berkas yang sudah tidak dipakai.
   setTimeout(() => URL.revokeObjectURL(url), 4000)
   roti(`Berkas ${nama} diunduh.`, 'positif')
+}
+
+/**
+ * Pilihan cepat periode. "Kemarin" ada karena laporan harian Telegram terbit
+ * pukul 05.30 untuk HARI SEBELUMNYA; analis yang ingin berkas yang sama persis
+ * dengan yang dibaca pimpinan pagi tadi harus bisa memilihnya dengan satu tekan.
+ */
+const PRATAKIR = {
+  hariini: { jenis: 'harian', mulai: () => hariWib(0), selesai: () => hariWib(0) },
+  kemarin: { jenis: 'harian', mulai: () => hariWib(-1), selesai: () => hariWib(-1) },
+  tujuh: { jenis: 'mingguan', mulai: () => hariWib(-6), selesai: () => hariWib(0) },
+  tigapuluh: { jenis: 'bulanan', mulai: () => hariWib(-29), selesai: () => hariWib(0) },
+}
+
+/**
+ * Berita pada periode yang dipilih, dari arsip yang sudah termuat di layar.
+ *
+ * Hari ditentukan `hariBerita()` — hari kalender Jakarta menurut waktu TANGKAP —
+ * sama persis dengan laporan Telegram dan Laporan Berkala. Memotong menurut
+ * tanggal terbit membuat berita yang terbit pekan lalu tetapi baru tertangkap
+ * tadi malam tidak pernah muncul di berkas mana pun.
+ */
+function beritaPeriode(keadaan, { hanyaNegatif }) {
+  const inti = dasar(keadaan.dalamLingkup || keadaan.berita || [])
+  return inti.filter((b) => {
+    const h = hariBerita(b)
+    if (!h || h < pilihan.mulai || h > pilihan.selesai) return false
+    return hanyaNegatif ? ember(b) === 'negatif' : true
+  })
+}
+
+/** Hari tertua yang termuat; arsip yang terpotong tidak boleh diam-diam dianggap lengkap. */
+function hariTertuaTermuat(keadaan) {
+  let tertua = null
+  for (const b of keadaan.berita || []) {
+    const h = hariBerita(b)
+    if (h && (!tertua || h < tertua)) tertua = h
+  }
+  return tertua
+}
+
+/**
+ * Mengunduh daftar berita periode ini sebagai CSV.
+ *
+ * Lewat `ekspor()` yang sama dengan Pencarian Lanjutan: kepala keterangan
+ * (siapa, kapan, saringan apa), pemeriksaan hak membawa berkas keluar, dan
+ * penolakan yang dijelaskan di mode peragaan. Kolom saran tindak lanjut
+ * ikut bagi peran yang berhak melihatnya.
+ */
+async function unduhDaftar(keadaan, { hanyaNegatif }) {
+  const baris = beritaPeriode(keadaan, { hanyaNegatif })
+  if (!baris.length) {
+    roti('Tidak ada berita pada periode ini di arsip yang termuat.', 'sedang', 4000)
+    return
+  }
+
+  const peran = keadaan.profil?.role
+  const dengan = punyaIzin(peran, 'lihat_saran_tindak')
+  let kolom = KOLOM_BERITA
+  if (dengan) {
+    await muatKeputusan()
+    const keputusan = keputusanSaatIni()
+    const saran = (b) => sarankanTindak(b, { keputusan: keputusan.get(b.id) || null })
+    kolom = [
+      ...KOLOM_BERITA,
+      { kunci: 'saran_tindak', label: 'Saran tindak lanjut', ambil: (b) => saran(b)?.label || '' },
+      { kunci: 'dasar_saran', label: 'Dasar saran', ambil: (b) => saran(b)?.dasar || '' },
+    ]
+  }
+
+  const rentang = pilihan.mulai === pilihan.selesai ? pilihan.mulai : `${pilihan.mulai} s.d. ${pilihan.selesai}`
+  const hasil = ekspor({
+    judul: `Daftar berita ${hanyaNegatif ? 'negatif ' : ''}${pilihan.jenis} ${rentang}`,
+    kolom,
+    baris,
+    profil: keadaan.profil,
+    kueri: `periode ${rentang} (hari kalender Jakarta menurut waktu tangkap); ${hanyaNegatif ? 'hanya sentimen negatif' : 'seluruh sentimen'}`,
+  })
+  roti(hasil.berhasil ? `Berkas diunduh: ${angka(baris.length)} berita.` : hasil.alasan,
+    hasil.berhasil ? 'positif' : 'sedang', 5000)
 }
 
 function bukaTab() {
@@ -197,6 +281,45 @@ export function halamanLaporan({ keadaan, isi }) {
             </div>
           </div>`,
       })}
+
+      ${punyaIzin(keadaan.profil?.role, 'unduh_laporan') ? kartu({
+        judul: 'Ekspor daftar berita',
+        ket: 'Satu berkas CSV berisi berita pada periode di atas, siap dibuka di Excel. '
+          + 'Berbeda dari laporan di atas: ini DAFTAR berita, bukan ringkasan.',
+        isi: (() => {
+          const semuaP = beritaPeriode(keadaan, { hanyaNegatif: false })
+          const negatifP = beritaPeriode(keadaan, { hanyaNegatif: true })
+          const tertua = hariTertuaTermuat(keadaan)
+          const terpotong = tertua && tertua > pilihan.mulai
+          const pratakir = [['hariini', 'Hari ini'], ['kemarin', 'Kemarin'], ['tujuh', '7 hari terakhir'], ['tigapuluh', '30 hari terakhir']]
+            .map(([k, l]) => `<button class="tbl kecil" data-pratakir="${k}">${l}</button>`).join('')
+          return `
+            <div class="label-mono" style="margin-bottom:6px">Pilih cepat</div>
+            <div class="baris gap-6" style="flex-wrap:wrap">${pratakir}</div>
+
+            <div class="baris gap-16" style="margin-top:12px;flex-wrap:wrap">
+              <span>Periode <b>${amankan(tanggalPanjang(pilihan.mulai))} — ${amankan(tanggalPanjang(pilihan.selesai))}</b></span>
+              <span>Seluruh berita <b class="angka">${angka(semuaP.length)}</b></span>
+              <span>Negatif <b class="angka">${angka(negatifP.length)}</b></span>
+            </div>
+
+            ${terpotong ? `<div style="margin-top:10px">${pesanSistem(
+              `<b>Arsip yang termuat di layar hanya sampai ${amankan(tanggalPanjang(tertua))}.</b>
+               Berita sebelum tanggal itu tidak ikut terunduh. Pilih periode yang lebih pendek,
+               atau susun laporan di atas, yang membaca langsung dari basis data.`,
+              'sedang', 'peringatan')}</div>` : ''}
+
+            <div class="baris gap-6" style="margin-top:12px;flex-wrap:wrap">
+              ${tombol({ label: 'Unduh CSV — seluruh berita', ikon: 'unduh', gaya: 'utama', aksi: 'unduh-daftar-semua', nonaktif: !semuaP.length })}
+              ${tombol({ label: 'Unduh CSV — negatif saja', ikon: 'unduh', aksi: 'unduh-daftar-negatif', nonaktif: !negatifP.length })}
+            </div>
+            <div class="mini-teks samar-teks" style="margin-top:8px">
+              Satu hari adalah pukul 00.00 sampai 23.59 WIB menurut waktu berita ditangkap, sama
+              dengan laporan Telegram. Berkas diawali beberapa baris keterangan (siapa, kapan,
+              saringan apa); Excel dan LibreOffice membacanya tanpa masalah.
+            </div>`
+        })(),
+      }) : ''}
 
       ${kartu({
         judul: 'UPT yang naik ke permukaan',
@@ -298,6 +421,20 @@ export function halamanLaporan({ keadaan, isi }) {
     pilihan.selesai = ev.target.value
     pilihan.hasil = null
   })
+
+  isi.querySelectorAll('[data-pratakir]').forEach((b) => {
+    b.addEventListener('click', () => {
+      const p = PRATAKIR[b.dataset.pratakir]
+      if (!p) return
+      pilihan.jenis = p.jenis
+      pilihan.mulai = p.mulai()
+      pilihan.selesai = p.selesai()
+      pilihan.hasil = null
+      gambarUlang()
+    })
+  })
+  isi.querySelector('[data-aksi="unduh-daftar-semua"]')?.addEventListener('click', () => unduhDaftar(keadaan, { hanyaNegatif: false }))
+  isi.querySelector('[data-aksi="unduh-daftar-negatif"]')?.addEventListener('click', () => unduhDaftar(keadaan, { hanyaNegatif: true }))
 
   isi.querySelector('[data-aksi="susun-laporan"]')?.addEventListener('click', () => buat(isi, keadaan))
   isi.querySelector('[data-aksi="unduh-laporan"]')?.addEventListener('click', unduh)

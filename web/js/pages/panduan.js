@@ -33,12 +33,13 @@
 
 import { kartu, tombol, pesanSistem, bidangCari } from '../ui/komponen.js'
 import { amankan } from '../lib/format.js'
+import { KONFIG } from '../lib/konfig.js'
 import { ikon } from '../lib/ikon.js'
 import {
-  MENU, MENU_KANWIL, MENU_UPT, adalahEksternal, adalahUnit, bolehBuka, labelPeran, PERAN, peranBaku,
+  MENU, MENU_KANWIL, MENU_UPT, adalahEksternal, adalahUnit, bolehBuka, labelPeran, PERAN, peranBaku, punyaIzin,
 } from '../lib/peran.js'
 import {
-  RUANG, TANPA_MENU, MANUAL_KIRIM, JENDELA_LAPORAN, ruangPeran,
+  RUANG, TANPA_MENU, MANUAL_KIRIM, JENDELA_LAPORAN, LANGKAH, ALUR_PERAN, ruangPeran,
 } from '../lib/panduan.js'
 
 /** Susunan menu tiap ruang, dipakai mengambil label dan ikon tiap fitur. */
@@ -55,7 +56,7 @@ const keadaanPanduan = { cari: '' }
  * keterangan tahu ada yang tertinggal; pembaca yang menemukan butirnya hilang
  * menyimpulkan fiturnya memang tidak ada.
  */
-function fiturRuang(nama) {
+function fiturRuang(nama, peran = null) {
   const katalog = RUANG[nama].butir
   const hasil = []
   for (const grup of MENU_RUANG[nama]) {
@@ -63,7 +64,15 @@ function fiturRuang(nama) {
       // Panduan tidak menjelaskan dirinya sendiri di dalam daftar fitur; ia
       // punya paragrafnya sendiri di bagian halaman tanpa menu.
       if (b.id === 'panduan') continue
-      hasil.push({ ...b, grup: grup.grup, ...(katalog[b.id] || {}) })
+      /*
+         Bila `peran` diberikan, hanya fitur yang boleh dibuka peran itu yang
+         ikut. Tutorial untuk layar yang tidak bisa dibuka pembacanya adalah
+         janji yang tidak bisa ditepati, dan yang membacanya menyimpulkan
+         haknya kurang. Hak ditanyakan ke `bolehBuka` — sumber yang sama dengan
+         menu dan penjaga rute — bukan ke daftar yang ditulis ulang di sini.
+      */
+      if (peran && !bolehBuka(peran, b.id)) continue
+      hasil.push({ ...b, grup: grup.grup, ...(katalog[b.id] || {}), langkah: LANGKAH[b.id] || [] })
     }
   }
   return hasil
@@ -72,7 +81,7 @@ function fiturRuang(nama) {
 /** Benar bila teks pencarian cocok dengan salah satu bagian sebuah fitur. */
 function cocok(f, cari) {
   if (!cari) return true
-  const gabung = `${f.label} ${f.grup} ${f.isi || ''} ${f.guna || ''} ${f.catatan || ''}`
+  const gabung = `${f.label} ${f.grup} ${f.isi || ''} ${f.guna || ''} ${f.catatan || ''} ${(f.langkah || []).join(' ')}`
   return gabung.toLowerCase().includes(cari)
 }
 
@@ -86,8 +95,10 @@ function cocok(f, cari) {
  * yang paling mudah dibuat di halaman ini — separuh isinya memang menjelaskan
  * layar yang tidak boleh dibuka pembacanya.
  */
-function barisFitur(f, peran, ruangSendiri) {
+function barisFitur(f, peran, ruangSendiri, { buka = false } = {}) {
   const boleh = ruangSendiri && bolehBuka(peran, f.id)
+  // Tutorial hanya untuk fitur yang boleh dibuka pembacanya (lihat fiturRuang).
+  const langkah = boleh ? (f.langkah || LANGKAH[f.id] || []) : []
   return `
     <article class="panduan-fitur" data-fitur="${amankan(f.id)}">
       <div class="panduan-fitur-kop">
@@ -113,15 +124,29 @@ function barisFitur(f, peran, ruangSendiri) {
         : `<p class="ket" style="margin:8px 0 0">
              Penjelasan fitur ini belum ditulis. Laporkan ke administrator sistem.
            </p>`}
+
+      ${langkah.length ? `
+        <details class="panduan-langkah"${buka ? ' open' : ''}>
+          <summary>Cara memakai <span class="ket">(${langkah.length} langkah)</span></summary>
+          <ol class="langkah">
+            ${langkah.map((l, i) => `
+              <li class="langkah-butir">
+                <span class="langkah-nomor">${i + 1}</span>
+                <div><p>${amankan(l)}</p></div>
+              </li>`).join('')}
+          </ol>
+        </details>` : ''}
     </article>`
 }
 
 function panelRuang(nama, peran, { sendiri = false, cari = '' } = {}) {
   const r = RUANG[nama]
-  const daftar = fiturRuang(nama).filter((f) => cocok(f, cari))
+  // Ruang milik pembaca hanya menampilkan fitur yang boleh dibukanya; ruang
+  // lain (bila ditampilkan sama sekali) tetap utuh sebagai keterangan.
+  const daftar = fiturRuang(nama, sendiri ? peran : null).filter((f) => cocok(f, cari))
 
   const isi = daftar.length
-    ? `<div class="panduan-daftar">${daftar.map((f) => barisFitur(f, peran, sendiri)).join('')}</div>`
+    ? `<div class="panduan-daftar">${daftar.map((f) => barisFitur(f, peran, sendiri, { buka: Boolean(cari) })).join('')}</div>`
     : `<p class="ket" style="margin:0">Tidak ada fitur di ruang ini yang cocok dengan pencarian.</p>`
 
   return kartu({
@@ -191,6 +216,78 @@ function panelJendela() {
   })
 }
 
+/**
+ * Alur kerja satu hari untuk peran pembaca.
+ *
+ * Urutannya ditulis tangan di lib/panduan.js (ALUR_PERAN), tetapi nama layarnya
+ * harus nama yang dibaca petugas di menu; penjaganya memastikan tiap peran pusat
+ * punya alur. Peran tanpa alur tidak mendapat panel ini, bukan panel kosong.
+ */
+function panelAlur(peran) {
+  const alur = ALUR_PERAN[peranBaku(peran)]
+  if (!alur?.length) return ''
+  return kartu({
+    judul: `Alur kerja untuk ${labelPeran(peran)}`,
+    ket: 'Urutan yang disarankan untuk satu hari. Hanya layar yang bisa Anda buka yang disebut.',
+    isi: `
+      <ol class="langkah">
+        ${alur.map((l, i) => `
+          <li class="langkah-butir">
+            <span class="langkah-nomor">${i + 1}</span>
+            <div><p>${amankan(l)}</p></div>
+          </li>`).join('')}
+      </ol>`,
+  })
+}
+
+/**
+ * Hak akses menurut peran — hanya bagi yang mengelola pengguna.
+ *
+ * Daftar layar tiap peran DIHITUNG dari bolehBuka(), tidak diketik: panel yang
+ * ditulis tangan akan basi pada hari izin pertama diubah, dan tidak ada yang
+ * tahu sampai seorang petugas bertanya kenapa ia tidak melihat sebuah menu.
+ * Berguna terutama saat menerbitkan akun: superadmin bisa melihat persis apa
+ * yang akan dilihat peran yang dipilihnya.
+ */
+function panelAkses(peran) {
+  if (!punyaIzin(peran, 'kelola_pengguna')) return ''
+  const perans = Object.keys(PERAN).filter((r) => !adalahEksternal(r))
+
+  const bagianPeran = perans.map((r) => {
+    const layar = MENU.flatMap((g) => g.butir
+      .filter((b) => b.id !== 'panduan' && bolehBuka(r, b.id))
+      .map((b) => b.label))
+    const alur = ALUR_PERAN[r] || []
+    return `
+      <details class="panduan-lain">
+        <summary>
+          ${ikon('panahKanan')}
+          <span>${amankan(labelPeran(r))}</span>
+          <span class="ket">${amankan(PERAN[r]?.tugas || '')} ${layar.length} layar.</span>
+        </summary>
+        <div class="panduan-lain-isi">
+          <div class="label-mono" style="margin-bottom:6px">Layar yang bisa dibuka</div>
+          <p class="kecil-teks" style="margin:0 0 10px">${layar.map((l) => amankan(l)).join(' · ')}</p>
+          ${alur.length ? `
+            <div class="label-mono" style="margin-bottom:6px">Alur kerja</div>
+            <ol class="langkah">
+              ${alur.map((l, i) => `
+                <li class="langkah-butir">
+                  <span class="langkah-nomor">${i + 1}</span>
+                  <div><p>${amankan(l)}</p></div>
+                </li>`).join('')}
+            </ol>` : ''}
+        </div>
+      </details>`
+  }).join('')
+
+  return kartu({
+    judul: 'Hak akses menurut peran',
+    ket: 'Hanya tampil bagi pengelola pengguna. Dihitung dari aturan menu yang sebenarnya, bukan ditulis tangan.',
+    isi: bagianPeran,
+  })
+}
+
 /** Nama layar yang tidak punya butir menu, sehingga labelnya tidak bisa dipinjam. */
 const LABEL_TANPA_MENU = {
   tren: 'Analisis Pemberitaan · Tren',
@@ -217,7 +314,10 @@ const LABEL_TANPA_MENU = {
 /** Halaman yang tidak punya butir menu, tetapi tetap dibuka setiap hari. */
 function panelTanpaMenu(peran, cari) {
   const daftar = Object.entries(TANPA_MENU)
-    .map(([id, d]) => ({ id, label: LABEL_TANPA_MENU[id] || id, grup: 'Tanpa butir menu', ...d }))
+    // Hanya layar yang boleh dibuka peran ini; panduan layar yang akan ditolak
+    // hanyalah daftar tempat yang tidak bisa dikunjungi.
+    .filter(([id]) => bolehBuka(peran, id))
+    .map(([id, d]) => ({ id, label: LABEL_TANPA_MENU[id] || id, grup: 'Tanpa butir menu', ...d, langkah: LANGKAH[id] || [] }))
     .filter((f) => cocok(f, cari))
 
   if (!daftar.length) return ''
@@ -226,7 +326,7 @@ function panelTanpaMenu(peran, cari) {
     judul: 'Layar tanpa butir menu',
     ket: 'Dibuka dari halaman lain, dari palet perintah, atau dari kaki menu samping.',
     isi: `<div class="panduan-daftar">${
-      daftar.map((f) => barisFitur(f, peran, true)).join('')
+      daftar.map((f) => barisFitur(f, peran, true, { buka: Boolean(cari) })).join('')
     }</div>`,
   })
 }
@@ -242,16 +342,28 @@ export function halamanPanduan({ keadaan, isi }) {
 
   function gambar() {
     const cari = keadaanPanduan.cari.trim().toLowerCase()
-    const lain = Object.keys(RUANG).filter((r) => r !== ruangSaya)
+    // Hanya ruang yang disetel di KONFIG.ruangPanduan. Di SI-RADAR itu ruang pusat
+    // saja; ruang kantor wilayah dan unit tidak dihuni siapa pun di sini.
+    const diizinkan = KONFIG.ruangPanduan || Object.keys(RUANG)
+    const lain = Object.keys(RUANG).filter((r) => r !== ruangSaya && diizinkan.includes(r))
+
+    // Manual kirim berita hanya untuk yang bisa memasukkan berita (atau unit,
+    // yang perlu tahu apa yang sudah dikerjakan sebelum berita sampai ke antreannya).
+    const adaManual = bolehBuka(peran, 'input') || unit
+    // Aturan jendela hari relevan bagi siapa pun yang membaca atau menyusun laporan.
+    const adaJendela = ['laporan', 'infografis', 'distribusi'].some((id) => bolehBuka(peran, id))
 
     isi.innerHTML = `
       <div class="tumpuk">
         ${pesanSistem(
           `Anda masuk sebagai <b>${amankan(labelPeran(peran))}</b>. `
-          + `${amankan(info.tugas || '')} Ruang Anda adalah `
-          + `<b>${amankan(RUANG[ruangSaya].label)}</b>, dan fiturnya dijelaskan lebih dulu `
-          + 'di bawah. Ruang lain ikut ditampilkan sebagai keterangan — bukan sebagai '
-          + 'pintu; datanya tetap tertutup seperti biasa.', 'aksen', 'info')}
+          + `${amankan(info.tugas || '')} Panduan di bawah hanya memuat layar yang bisa `
+          + 'Anda buka, masing-masing dengan cara memakainya langkah demi langkah. '
+          + (lain.length
+            ? 'Ruang lain ikut ditampilkan sebagai keterangan — bukan sebagai pintu; '
+              + 'datanya tetap tertutup seperti biasa.'
+            : 'Layar yang tidak termasuk hak peran Anda sengaja tidak ditampilkan.'),
+          'aksen', 'info')}
 
         <div class="panduan-alat">
           ${bidangCari(keadaanPanduan.cari, 'Cari fitur, mis. ringkasan wilayah')}
@@ -259,12 +371,16 @@ export function halamanPanduan({ keadaan, isi }) {
           ${tombol({ label: 'Cetak panduan', ikon: 'laporan', aksi: 'cetak', kecil: true })}
         </div>
 
+        ${cari ? '' : panelAlur(peran)}
+
         ${panelRuang(ruangSaya, peran, { sendiri: true, cari })}
 
-        ${cari ? '' : panelManual(peran)}
-        ${cari ? '' : panelJendela()}
+        ${cari || !adaManual ? '' : panelManual(peran)}
+        ${cari || !adaJendela ? '' : panelJendela()}
 
         ${panelTanpaMenu(peran, cari)}
+
+        ${cari ? '' : panelAkses(peran)}
 
         ${lain.map((r) => `
           <details class="panduan-lain"${cari ? ' open' : ''}>

@@ -26,10 +26,12 @@ import { ember } from '../lib/sentimen.js'
 import { dasar } from '../lib/hitung.js'
 import { ikon } from '../lib/ikon.js'
 import { punyaIzin } from '../lib/peran.js'
+import { sarankanPeristiwa, hitungTindakan, TINDAKAN } from '../lib/tindak-lanjut.js'
+import { muatKeputusan, keputusanSaatIni, keputusanDimuat, galatKeputusan } from '../lib/keputusan-tindak.js'
 
 /** Keadaan tapis per kanal, disimpan supaya pilihan tidak hilang saat digambar ulang. */
 const keadaanTapis = {
-  negatif: { urutan: 'eksposur', tingkat: 'semua' },
+  negatif: { urutan: 'eksposur', tingkat: 'semua', tindak: 'semua' },
   positif: { urutan: 'jumlah', tingkat: 'semua' },
 }
 
@@ -69,9 +71,47 @@ function barisSumber(b) {
   </li>`
 }
 
+/* ------------------------------------------------------------ saran tindak */
+
+const DASAR_SARAN = {
+  analis: 'diputuskan analis',
+  unit: 'menurut sikap unit',
+  mesin: 'saran mesin',
+}
+
+/**
+ * Saran tindak lanjut pada satu kartu.
+ *
+ * Yang tampil lebih dulu hanya satu keping — cukup untuk dipindai dua puluh
+ * kartu sekaligus. Alasan dan langkahnya terlipat: pembaca yang ingin tahu
+ * kenapa tinggal membukanya, dan pembaca yang tidak ingin tidak dipaksa
+ * membaca. Bila analis sudah memutuskan dan keputusannya berbeda dari mesin,
+ * perbedaan itu ditampilkan di sebelahnya — itu informasi, bukan galat.
+ */
+function blokSaran(s, bolehCatat) {
+  return `
+    <div class="saran-tindak" data-tindak="${amankan(s.kode)}">
+      <div class="saran-kop">
+        ${keping(`Saran: ${s.pendek}`, s.nada, true)}
+        <span class="mini-teks samar-teks">${amankan(DASAR_SARAN[s.dasar] || '')}</span>
+        ${s.berbeda ? keping(`Mesin menyarankan: ${s.mesin.pendek}`, 'netral', true) : ''}
+      </div>
+      <details>
+        <summary>Alasan dan langkah yang disarankan</summary>
+        <ul class="saran-alasan">${s.alasan.map((a) => `<li>${amankan(a)}</li>`).join('')}</ul>
+        <ol class="saran-langkah">${s.langkah.map((l) => `<li>${amankan(l)}</li>`).join('')}</ol>
+        ${bolehCatat && s.berita ? `
+          <button class="tbl kecil" data-aksi="putuskan-tindak" data-id="${amankan(s.berita.id)}"
+                  title="Buka detail berita untuk mencatat hasil verifikasi dan keputusan">
+            ${ikon('centang')} Catat keputusan
+          </button>` : ''}
+      </details>
+    </div>`
+}
+
 /* ---------------------------------------------------------- kartu peristiwa */
 
-function kartuPeristiwa(p, eksposurMaks, bolehKasus = false) {
+function kartuPeristiwa(p, eksposurMaks, bolehKasus = false, saran = null, bolehCatat = false) {
   const nada = nadaUrgensi(p.urgensi)
   const lebar = eksposurMaks ? Math.max(6, Math.round((p.eksposur / eksposurMaks) * 100)) : 0
   const unit = belumTerpetakan(p.nama_upt) ? null : p.nama_upt
@@ -105,6 +145,8 @@ function kartuPeristiwa(p, eksposurMaks, bolehKasus = false) {
 
     <div class="eksposur" title="Eksposur ${p.eksposur}"><i style="width:${lebar}%"></i></div>
 
+    ${saran ? blokSaran(saran, bolehCatat) : ''}
+
     ${bolehKasus ? `
       <div class="baris gap-6">
         <button class="tbl kecil" data-aksi="jadikan-kasus" data-id="${amankan(p.publikasi[0]?.id || '')}"
@@ -123,6 +165,18 @@ function kartuPeristiwa(p, eksposurMaks, bolehKasus = false) {
   </article>`
 }
 
+/** Hitungan per tindakan, sekaligus saringannya. */
+function ringkasanSaran(hitung, aktif) {
+  const tombol = [['semua', 'Semua saran', null], ...TINDAKAN.map((t) => [t.kode, t.pendek, hitung[t.kode]])]
+    .map(([k, l, n]) => `<button data-tapis-tindak="${k}" aria-pressed="${aktif === k}">
+      ${amankan(l)}${n === null ? '' : ` <b class="angka">${angka(n)}</b>`}</button>`).join('')
+  return `
+    <div class="saran-ringkas">
+      <span class="label-mono">Saran tindak lanjut</span>
+      <div class="segmen" data-peran="tindak">${tombol}</div>
+    </div>`
+}
+
 /* ------------------------------------------------------------ pintu halaman */
 
 export function halamanKanalNegatif(ctx) { return gambarKanal(ctx, 'negatif') }
@@ -134,6 +188,15 @@ function gambarKanal({ keadaan, isi }, sisi) {
   const tapis = keadaanTapis[sisi]
 
   const bolehKasus = negatif && punyaIzin(keadaan.profil?.role, 'kelola_kasus')
+  const bolehSaran = negatif && punyaIzin(keadaan.profil?.role, 'lihat_saran_tindak')
+  const bolehCatat = bolehSaran && punyaIzin(keadaan.profil?.role, 'catat_tindak_berita')
+
+  // Keputusan analis dimuat sekali; setelah sampai, halaman digambar ulang
+  // satu kali. Bendera dimuat menjadi benar bahkan saat gagal, jadi tidak ada
+  // putaran ulang tanpa henti.
+  if (bolehSaran && !keputusanDimuat()) {
+    muatKeputusan().then(() => document.dispatchEvent(new CustomEvent('gambar-ulang')))
+  }
 
   const judul = negatif ? 'Berita Negatif' : 'Berita Positif'
   const sub = negatif
@@ -154,9 +217,20 @@ function gambarKanal({ keadaan, isi }, sisi) {
   }
 
   const peristiwa = kelompokkanPeristiwa(daftar)
-  const tersaring = tapis.tingkat === 'semua'
+
+  // Saran dihitung SEKALI per peristiwa dan dipakai kartu, hitungan, dan
+  // saringan — tiga tempat yang kalau menghitung sendiri-sendiri akan berselisih.
+  const keputusan = keputusanSaatIni()
+  const saranPer = new Map()
+  if (bolehSaran) for (const p of peristiwa) saranPer.set(p, sarankanPeristiwa(p, keputusan))
+  const hitungSaran = hitungTindakan([...saranPer.values()])
+
+  const sesuaiTingkat = tapis.tingkat === 'semua'
     ? peristiwa
     : peristiwa.filter((p) => p.urgensi === tapis.tingkat)
+  const tersaring = (bolehSaran && tapis.tindak !== 'semua')
+    ? sesuaiTingkat.filter((p) => saranPer.get(p)?.kode === tapis.tindak)
+    : sesuaiTingkat
 
   const urut = [...tersaring].sort((a, b) => {
     if (tapis.urutan === 'terbaru') {
@@ -219,9 +293,13 @@ function gambarKanal({ keadaan, isi }, sisi) {
         aksi: `<div class="segmen" data-peran="urutan">${tombolUrut}</div>`,
         isi: `
           <div class="segmen" data-peran="tingkat" style="margin-bottom:12px">${tombolTapis}</div>
+          ${bolehSaran ? ringkasanSaran(hitungSaran, tapis.tindak) : ''}
+          ${bolehSaran && galatKeputusan() ? pesanSistem(
+              `Keputusan analis belum bisa dimuat (${amankan(galatKeputusan())}). Saran yang tampil adalah saran mesin saja.`,
+              'sedang', 'peringatan') : ''}
           <div style="display:grid;gap:10px">
             ${urut.length
-              ? urut.map((p) => kartuPeristiwa(p, eksposurMaks, bolehKasus)).join('')
+              ? urut.map((p) => kartuPeristiwa(p, eksposurMaks, bolehKasus, saranPer.get(p) || null, bolehCatat)).join('')
               : '<p class="samar-teks kecil-teks">Tidak ada peristiwa pada tingkat urgensi itu.</p>'}
           </div>`,
       })}
@@ -239,6 +317,13 @@ function gambarKanal({ keadaan, isi }, sisi) {
      ia mengerjakan yang baru saja dikerjakannya.
   */
   isi.addEventListener('click', (ev) => {
+    const putus = ev.target.closest('[data-aksi="putuskan-tindak"]')
+    if (putus?.dataset.id) {
+      document.dispatchEvent(new CustomEvent('buka-halaman', {
+        detail: { halaman: 'berita-detail', fokus: putus.dataset.id },
+      }))
+      return
+    }
     const t = ev.target.closest('[data-aksi="jadikan-kasus"]')
     if (!t?.dataset.id) return
     document.dispatchEvent(new CustomEvent('buka-halaman', {
@@ -249,6 +334,12 @@ function gambarKanal({ keadaan, isi }, sisi) {
   isi.querySelectorAll('[data-tapis-tingkat]').forEach((b) => {
     b.addEventListener('click', () => {
       tapis.tingkat = b.dataset.tapisTingkat
+      document.dispatchEvent(new CustomEvent('gambar-ulang'))
+    })
+  })
+  isi.querySelectorAll('[data-tapis-tindak]').forEach((b) => {
+    b.addEventListener('click', () => {
+      tapis.tindak = b.dataset.tapisTindak
       document.dispatchEvent(new CustomEvent('gambar-ulang'))
     })
   })

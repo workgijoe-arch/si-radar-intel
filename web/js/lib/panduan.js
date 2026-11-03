@@ -61,16 +61,45 @@ const PUSAT = {
       + 'dipinjam dari perhitungan yang sama dengan dasbor, sehingga keduanya tidak '
       + 'pernah berselisih.',
   },
+  'deteksi-lonjakan': {
+    isi: 'Dua daftar yang dibaca mesin di peladen tiap jam: unit yang mendadak diberitakan '
+      + 'buruk berkali-kali dalam sehari, dan isu yang diangkat banyak media sekaligus. '
+      + 'Ambang penandaannya tertulis di layar.',
+    guna: 'Peringatan Dini menilai berita satu per satu; halaman ini menilai pola. Sebuah unit '
+      + 'yang dibicarakan lima kali dengan urgensi sedang lolos dari penilaian per berita, '
+      + 'tetapi lima kali dalam satu hari adalah kabar yang harus dibaca malam itu juga.',
+    catatan: 'Halaman ini hanya membaca hasil mesin; ia tidak menghitung sendiri. Layar dinding '
+      + 'versinya, Situation Room, dibuka dari tombol di dalam halaman ini, bukan dari menu.',
+  },
+  peta: {
+    isi: 'Seluruh Lapas, Rutan, dan LPKA di Indonesia sebagai titik pada satu peta layar '
+      + 'penuh, diwarnai menurut kerawanan masing-masing: Kritis, Rawan, Waspada, Terkendali, '
+      + 'atau Tanpa pemberitaan. Di sebelahnya ada daftar Sedang mencuat, yaitu unit yang '
+      + 'berita negatifnya naik dibanding rentang sebelumnya, beserta panah naik atau turun.',
+    guna: 'Menjawab di mana persoalannya menumpuk dan unit mana yang sedang naik. Rentang '
+      + 'waktunya bisa dipilih: hari ini, 7 hari, 30 hari, atau seluruh arsip yang termuat. '
+      + 'Tujuh hari adalah bawaannya karena pertanyaan halaman ini adalah apa yang sedang '
+      + 'terjadi, bukan apa yang pernah terjadi.',
+    catatan: 'Warna titik ditentukan aturan kerawanan yang sama dengan seluruh angka di sistem, '
+      + 'bukan oleh halaman ini. Koordinat sebagian besar unit masih titik pusat kota, jadi jarak '
+      + 'antartitik tidak dapat dipakai sebagai jarak sebenarnya. Peta yang sama juga tergambar '
+      + 'di Dasbor Eksekutif, dengan berita sebulan.',
+  },
   negatif: {
     isi: 'Seluruh pemberitaan yang merugikan institusi, disusun per PERISTIWA, bukan per '
       + 'publikasi. Delapan berita tentang satu narapidana yang kabur tampil sebagai satu '
-      + 'kejadian dengan eksposur delapan.',
+      + 'kejadian dengan eksposur delapan. Bagi peran yang berhak, tiap kartu membawa saran '
+      + 'tindak lanjut: tangani langsung (sidak), statement klarifikasi, verifikasi dulu, '
+      + 'atau pantau, lengkap dengan alasannya.',
     guna: 'Menjawab apa yang sedang merugikan institusi hari ini, dan seberapa keras '
       + 'tekanan opininya. Berdiri sendiri di menu supaya isu merugikan tidak perlu '
-      + 'dicari dulu di dalam daftar gabungan.',
+      + 'dicari dulu di dalam daftar gabungan. Saringan saran memisahkan yang perlu '
+      + 'didatangi dari yang cukup dijawab.',
     catatan: 'Jumlah peristiwa dan jumlah publikasi adalah dua angka yang berbeda dan '
       + 'keduanya ditampilkan. Yang pertama menentukan berapa banyak yang harus ditangani, '
-      + 'yang kedua menentukan seberapa besar gaungnya.',
+      + 'yang kedua menentukan seberapa besar gaungnya. Saran tindak lanjut adalah saran '
+      + 'mesin atau sikap unit; keputusan akhir ada pada analis, dan keputusan analis selalu '
+      + 'mengalahkan saran mesin.',
   },
   positif: {
     isi: 'Pemberitaan yang menguatkan institusi, disusun dengan bentuk yang sama seperti '
@@ -158,11 +187,15 @@ const PUSAT = {
     catatan: 'Kemajuan diisi pelaksananya, bukan dihitung sistem.',
   },
   laporan: {
-    isi: 'Penyusun laporan intelijen berkala. Pilih periodenya, tekan satu tombol, dan '
-      + 'berkasnya jadi lengkap dengan diagram serta daftar sumbernya — siap dicetak atau '
-      + 'disimpan sebagai PDF lewat menu cetak peramban.',
-    guna: 'Ekspor mandiri, tanpa menunggu siapa pun menjalankan perintah di belakang layar. '
-      + 'Isinya pemberitaan negatif: daftar hal yang menuntut tindakan.',
+    isi: 'Dua keluaran untuk periode yang sama. Pertama, laporan intelijen berkala: pilih '
+      + 'periodenya, tekan satu tombol, dan berkasnya jadi lengkap dengan diagram serta '
+      + 'daftar sumbernya, siap dicetak atau disimpan sebagai PDF lewat menu cetak peramban. '
+      + 'Kedua, ekspor daftar berita: satu berkas CSV berisi berita pada periode itu, '
+      + 'seluruhnya atau hanya yang negatif, dengan pilihan cepat Hari ini, Kemarin, 7 hari '
+      + 'terakhir, dan 30 hari terakhir.',
+    guna: 'Ekspor mandiri harian dan mingguan, tanpa menunggu siapa pun menjalankan perintah di '
+      + 'belakang layar. Laporan memuat pemberitaan negatif, yaitu daftar hal yang menuntut '
+      + 'tindakan; CSV memuat daftar mentahnya untuk diolah di Excel.',
     catatan: 'Satu hari laporan berarti pukul 00.00 sampai 23.59 WIB, sama persis dengan '
       + 'jendela yang dipakai laporan harian Telegram.',
   },
@@ -445,20 +478,14 @@ export const TANPA_MENU = {
     catatan: 'Label AWAL berarti belum ditelaah analis; label RESMI berarti sudah '
       + 'diverifikasi. Hanya yang kedua yang boleh menjadi dasar keputusan.',
   },
-  peta: {
-    isi: 'Seluruh Lapas, Rutan, dan LPKA di Indonesia sebagai titik pada satu peta, '
-      + 'diwarnai menurut keadaan pemberitaan masing-masing.',
-    guna: 'Tergambar di Dasbor Eksekutif. Menjawab pertanyaan yang tidak bisa dijawab tabel: di mana persoalannya '
-      + 'menumpuk. Sepuluh unit rawan yang tersebar dari Aceh sampai Papua dan sepuluh '
-      + 'unit rawan di satu provinsi terbaca sama di dalam tabel dan berbeda artinya.',
-    catatan: 'Sebagian besar koordinat masih berupa titik pusat kota, bukan alamat '
-      + 'gedungnya. Itu dinyatakan di layar dan diperbaiki lewat halaman Koordinat UPT.',
-  },
   'berita-detail': {
     isi: 'Satu berita utuh beserta dasar penilaiannya: kata kunci penentu, skor mesin, '
-      + 'catatan telaah analis, dan tanggapan unit bila sudah ada.',
+      + 'catatan telaah analis, dan tanggapan unit bila sudah ada. Bagi peran yang berhak, '
+      + 'di puncaknya ada kartu Rekomendasi tindak lanjut: saran beserta alasan dan langkahnya, '
+      + 'dan formulir untuk mencatat hasil verifikasi dan keputusan.',
     guna: 'Menjawab pertanyaan yang paling sering ditanyakan dan paling sulit dijawab: '
-      + 'kenapa berita ini dinilai begitu. Dibuka dari Pusat Data Berita dan dari palet '
+      + 'kenapa berita ini dinilai begitu, dan apa yang sebaiknya dilakukan sesudahnya. '
+      + 'Dibuka dari Pusat Data Berita, dari kartu Berita Negatif, dan dari palet '
       + 'perintah.',
     catatan: 'Halaman ini hanya untuk peran pusat, sebab ia menampilkan catatan analis '
       + 'pusat. Membukanya bagi daerah berarti melepas catatan itu ke wilayah.',
@@ -474,6 +501,306 @@ export const TANPA_MENU = {
     guna: 'Dibuka petugas baru pada hari pertama, dan dibuka siapa pun yang lupa sebuah '
       + 'layar untuk apa. Tersedia bagi seluruh peran.',
   },
+}
+
+/* ---------------------------------------------------------------- tutorial */
+
+/**
+ * Cara memakai tiap fitur, sebagai langkah berurutan.
+ *
+ * Dipisahkan dari katalog di atas karena menjawab pertanyaan yang lain. Katalog
+ * menjawab "layar ini isinya apa dan untuk apa"; tutorial menjawab "saya
+ * membukanya, lalu apa". Yang pertama dibaca sekali; yang kedua dibaca setiap
+ * kali orang lupa urutannya.
+ *
+ * Halaman panduan hanya menampilkan tutorial fitur yang boleh dibuka peran
+ * pembacanya. Tutorial untuk layar yang tidak bisa dibuka adalah janji yang
+ * tidak bisa ditepati, dan petugas yang membacanya menyimpulkan haknya kurang.
+ *
+ * Teks polos, seperti katalog. Penjaganya di tools/uji-panduan.mjs: tiap butir
+ * menu pusat wajib punya tutorial minimal tiga langkah.
+ */
+export const LANGKAH = {
+  dasbor: [
+    'Buka Dasbor Eksekutif; ini layar pertama setelah masuk. Pilih tab Bulan ini atau Bulan lalu di bawah judul.',
+    'Baca bilah kesehatan data di puncak: ia menunjukkan apakah penyalinan berjalan dan apakah ada berita baru yang benar-benar masuk.',
+    'Baca ubin angka dari kiri ke kanan. Tekan sebuah ubin untuk membuka daftar berita yang menghasilkan angka itu.',
+    'Bila ada kotak peringatan merah di bawah tab, baca dan buka daftarnya; itu kejadian yang menunggu penanganan.',
+    'Gulir ke bawah untuk unit yang diberitakan negatif dalam 24 jam terakhir. Peta sebaran tampil di bagian bawah bagi peran yang berhak.',
+  ],
+  briefing: [
+    'Buka Peringatan Dini dan baca pernyataan tingkat risiko di puncak halaman.',
+    'Baca angka-angka besar; masing-masing membawa pembanding periode sebelumnya.',
+    'Baca daftar pendek hal yang menuntut keputusan.',
+    'Di bagian Penilaian risiko, tekan kata tingkat risiko sebuah pola untuk membuka kartu beritanya: judul, sumber asli, tombol telaah, dan tombol jadikan kasus.',
+  ],
+  'deteksi-lonjakan': [
+    'Buka Deteksi Lonjakan dan baca tiga ubin di puncak: unit yang melonjak, isu lintas media, dan waktu pembacaan terakhir.',
+    'Pada daftar unit yang melonjak, baca ambang yang tertulis di layar supaya tahu persis apa yang membuat sebuah unit ditandai.',
+    'Buka contoh artikel pada tiap butir untuk memastikan lonjakannya sungguhan, bukan satu berita yang disalin banyak situs.',
+    'Untuk layar dinding ruang piket, tekan Buka Situation Room.',
+  ],
+  peta: [
+    'Buka Peta Kerawanan. Titik berwarna menunjukkan kerawanan tiap Lapas, Rutan, dan LPKA; legenda di bawah peta menjelaskan warnanya.',
+    'Pilih rentang waktu di bilah atas: Hari ini, 7 hari, 30 hari, atau Semua termuat. Bawaannya 7 hari.',
+    'Baca daftar Sedang mencuat di sisi kanan. Panah merah naik berarti berita negatif unit itu bertambah dibanding rentang sebelumnya.',
+    'Tekan nama unit di daftar atau titik di peta untuk membuka rincian unit dan berita yang mewarnainya.',
+    'Gunakan kotak cari, saringan kantor wilayah, dan tombol Hanya yang bermasalah untuk menyempitkan peta. Tahan Ctrl sambil memutar roda untuk memperbesar.',
+  ],
+  negatif: [
+    'Buka Berita Negatif. Satu kartu adalah satu peristiwa; batang di bawahnya menunjukkan besar tekanan opininya.',
+    'Saring menurut tingkat urgensi, atau urutkan menurut Eksposur, Publikasi, atau Terbaru.',
+    'Pada baris Saran tindak lanjut, tekan Sidak, Klarifikasi, Verifikasi, atau Pantau untuk hanya melihat peristiwa dengan saran itu. Angka di tiap tombol adalah jumlah peristiwanya.',
+    'Pada sebuah kartu, buka Alasan dan langkah yang disarankan untuk tahu kenapa mesin menyarankan itu dan apa langkah berikutnya.',
+    'Tekan Catat keputusan untuk membuka detail berita dan menyimpan hasil verifikasi beserta keputusan Anda.',
+    'Bila peristiwa perlu perkara tersendiri, tekan Jadikan kasus.',
+  ],
+  positif: [
+    'Buka Berita Positif; susunannya sama dengan kanal negatif.',
+    'Cari peristiwa dengan jumlah media terbanyak untuk dijadikan bahan penyeimbang.',
+    'Pakai unit yang sama dengan isu negatif sebagai acuan: capaian di unit itu adalah jawaban yang paling kuat.',
+  ],
+  analisis: [
+    'Buka Analisis Pemberitaan dan pilih tab: Tren, Narasi, Kaitan, atau Pusat Komando.',
+    'Mulai dari Tren untuk tahu apa yang berubah dibanding periode sebelumnya.',
+    'Pindah ke Narasi untuk melihat cerita apa yang sedang berjalan, lalu ke Kaitan untuk melihat unit, media, dan tema yang saling bertemu.',
+    'Tab yang terakhir dibuka diingat selama sesi.',
+  ],
+  ruang: [
+    'Buka Ruang Analis; ini halaman tentang pekerjaan Anda hari ini, bukan tentang arsip.',
+    'Baca bagian yang menuntut hari ini lebih dulu.',
+    'Periksa pantauan milik Anda dan temuan aturan peringatan.',
+    'Pantauan tersimpan di peramban ini saja; ia tidak ikut ke komputer lain.',
+  ],
+  cari: [
+    'Buka Pencarian Lanjutan dan ketik kueri pada kotak. Saringan yang dipasang lewat tombol ikut tertulis ke dalam kotak itu.',
+    'Gabungkan syarat dengan DAN, ATAU, dan TIDAK; pakai tanda kutip untuk frasa.',
+    'Simpan kueri yang sering dipakai sebagai pantauan.',
+    'Unduh hasilnya sebagai CSV lewat tombol unduh.',
+    'Untuk mengubah status telaah, buka berita lewat Antrean Telaah; halaman ini sengaja tidak mengubah status massal.',
+  ],
+  berita: [
+    'Buka Pusat Data Berita dan pakai enam saringan tetap atau kotak cari.',
+    'Tekan sebuah baris untuk membuka halaman detail berita itu.',
+    'Tekan tombol unduh untuk mendapat CSV dari hasil saringan yang sedang tampil.',
+    'Untuk berkas periode harian atau mingguan yang lengkap, pakai Laporan Berkala.',
+  ],
+  input: [
+    'Buka Input Berita. Borangnya satu halaman, dengan panel penilaian mesin di sebelah kanan.',
+    'Ikuti manual mengirim berita di bagian bawah panduan ini, langkah demi langkah.',
+    'Setelah menyimpan, berita berstatus Belum Ditelaah dan baru ikut dihitung setelah penelaah menyetujuinya.',
+  ],
+  'siklus-kasus': [
+    'Buka Kasus Intelijen. Bila peran Anda menelaah, tab pertama adalah Antrean Telaah.',
+    'Pada Antrean Telaah, baca alasan mesin untuk satu berita, lalu setujui atau koreksi. Berita berikutnya muncul sesudahnya.',
+    'Pindah ke tab Kasus Intelijen untuk melihat perkara yang sedang berjalan beserta riwayat penanganannya.',
+    'Untuk membentuk kasus baru, isi Analisa Awal, Nilai informasi, dan PIC pada borang Bentuk Kasus.',
+  ],
+  lapangan: [
+    'Buka Verifikasi Lapangan untuk melihat daftar penugasan.',
+    'Analis menerbitkan surat tugas dari kasus yang dipilih.',
+    'Petugas lapangan membuka penugasannya, mengisi laporan, dan mengunggah bukti.',
+    'Laporan lapangan tidak mengubah status berita; yang berhak menyatakan berita tidak valid adalah analis pusat.',
+  ],
+  evaluasi: [
+    'Buka Evaluasi dan Rekomendasi dan pilih kasus yang laporan lapangannya sudah masuk.',
+    'Baca matriks penyandingan: apa kata media, apa kata lapangan, cocok atau tidak.',
+    'Tulis rekomendasi sebagai butir-butir tersendiri, satu tindakan satu butir.',
+    'Analisis yang sudah diverifikasi tidak bisa disunting; buat versi baru bila ada yang perlu diubah.',
+  ],
+  keputusan: [
+    'Buka Keputusan Pimpinan dan baca analisis beserta rekomendasinya.',
+    'Centang rekomendasi yang disetujui. Menyetujui sebagian saja adalah putusan yang sah.',
+    'Simpan putusan. Putusan tidak bisa dicabut; yang keliru dikoreksi dengan putusan baru.',
+  ],
+  tindak: [
+    'Buka Tindak Lanjut untuk melihat butir pekerjaan turunan putusan pimpinan, beserta pelaksana dan tenggatnya.',
+    'Butir yang lewat tenggat diangkat ke kelompoknya sendiri di puncak halaman; mulai dari sana.',
+    'Pelaksana memperbarui kemajuan butirnya sendiri; sistem tidak menghitungnya.',
+  ],
+  laporan: [
+    'Buka Laporan Berkala. Pilih jenis laporan: Harian, Mingguan, atau Bulanan; tanggalnya terisi otomatis.',
+    'Ubah tanggal Mulai dan Sampai bila perlu. Satu hari adalah pukul 00.00 sampai 23.59 WIB menurut waktu berita ditangkap.',
+    'Tekan Susun laporan. Berkas dibuat di peramban Anda sendiri, tanpa mengirim data ke pihak lain.',
+    'Pada Laporan siap, tekan Buka, atau Unduh HTML lalu cetak sebagai PDF lewat menu Cetak peramban.',
+    'Untuk mengirimnya ke pimpinan, tekan Kirim lewat Telegram; halaman itu menampilkan pratinjau lebih dulu.',
+    'Untuk daftar berita mentah, pakai kartu Ekspor daftar berita: pilih Hari ini, Kemarin, 7 hari terakhir, atau 30 hari terakhir, lalu unduh CSV seluruh berita atau hanya yang negatif.',
+    'Bila muncul peringatan arsip terpotong, periode yang Anda pilih lebih panjang dari arsip yang termuat; persempit periodenya.',
+  ],
+  infografis: [
+    'Buka Lembar Infografis dan pilih harian atau mingguan.',
+    'Periksa lembar di layar: tiga lambang resmi di kepalanya, peta sebaran, dan ringkasan sisi baik serta sisi buruk.',
+    'Tekan Unduh PNG untuk dikirim lewat pesan, Unduh SVG untuk diolah desainer, atau Cetak untuk kertas. Ketiganya gambar yang sama.',
+  ],
+  distribusi: [
+    'Buka Distribusi Telegram dan pilih jenis ringkasan, lalu tekan Susun ringkasan.',
+    'Baca pratinjau pesan dan lampirannya sebelum apa pun dikirim.',
+    'Pilih grup tujuan. Tidak ada pengiriman tanpa tujuan yang disebutkan.',
+    'Tekan Kirim ke grup terpilih, lalu periksa riwayat pengiriman di bawahnya.',
+    'Bila pengiriman gagal, riwayat menyebut sebabnya; sambungan bot diperiksa di Integrasi dan Kunci.',
+  ],
+  'pengguna-data': [
+    'Buka Pengguna & Data Induk dan pilih tab: Pengguna, Koordinat UPT, Integrasi dan Kunci, atau Jejak Audit.',
+    'Pada tab Pengguna, terbitkan akun baru dan pilih perannya. Superadmin boleh menerbitkan peran apa pun.',
+    'Pada Koordinat UPT, betulkan titik unit yang masih berupa pusat kota, lalu periksa pratinjaunya di peta.',
+    'Periksa Jejak Audit secara berkala untuk melihat siapa mengubah apa.',
+  ],
+  'pemantauan-sistem': [
+    'Buka Pemantauan Sistem dan pilih tab Aturan Peringatan atau Kesehatan Sistem.',
+    'Pada Aturan Peringatan, tulis syarat dan penerimanya; jangkauan aturan dihitung ulang terhadap arsip sebelum Anda menyimpan.',
+    'Pada Kesehatan Sistem (khusus superadmin), pastikan penyalin sumber, perayap, penjadwal laporan, dan pengiriman Telegram tidak diam melewati ambangnya.',
+  ],
+  /* Layar yang tidak punya butir menu. */
+  telaah: [
+    'Buka Antrean Telaah lewat menu Kasus Intelijen.',
+    'Baca berita yang tampil beserta alasan mesin: kata kunci penentu, skor keyakinan, dan pesaing terdekat.',
+    'Setujui bila penilaian tepat, atau koreksi kategori, sentimen, dan urgensinya.',
+    'Lanjut ke berita berikutnya; antrean menampilkan satu berita per layar supaya setiap berita dibaca.',
+  ],
+  kasus: [
+    'Buka tab Kasus Intelijen di dalam menu Kasus Intelijen.',
+    'Pilih sebuah kasus untuk membaca publikasi yang diikat dan riwayat penanganannya.',
+    'Perbarui tahap penanganan sesuai wewenang peran Anda.',
+  ],
+  aturan: [
+    'Buka tab Aturan Peringatan di Pemantauan Sistem.',
+    'Pilih aturan bawaan untuk mengubah ambangnya, atau tambah aturan baru: bila apa terjadi, kabari siapa.',
+    'Perhatikan jangkauan yang dihitung ulang setiap kali syarat diubah, sebelum menekan Simpan.',
+    'Aturan bawaan tidak bisa dihapus; tombolnya Pulihkan.',
+  ],
+  kesehatan: [
+    'Buka tab Kesehatan Sistem di Pemantauan Sistem.',
+    'Baca waktu kegiatan terakhir tiap komponen dan bandingkan dengan ambang diamnya yang tertulis.',
+    'Komponen yang melewati ambang berarti ada yang berhenti walau tidak ada galat di layar siapa pun.',
+  ],
+  pengguna: [
+    'Buka tab Pengguna di Pengguna & Data Induk.',
+    'Isi identitas (alamat surel atau username), nama, dan peran, lalu terbitkan akun.',
+    'Cari akun yang sudah ada di daftar untuk memeriksa atau mengubahnya.',
+    'Petugas masuk dengan apa yang tertulis pada kolom identitas.',
+  ],
+  koordinat: [
+    'Buka tab Koordinat UPT dan pilih satu unit.',
+    'Isi atau betulkan lintang dan bujurnya, lalu lihat pratinjau titiknya di peta.',
+    'Waspadai dua kesalahan yang paling sering: lintang dan bujur tertukar, atau tanda minus hilang.',
+  ],
+  integrasi: [
+    'Buka tab Integrasi dan Kunci.',
+    'Ikuti empat langkah penyiapan Telegram dan lihat tanda sudah atau belum pada tiap langkah.',
+    'Bila ada yang salah, kalimat di layar menyebut persisnya; kunci bot tidak pernah diketik di halaman ini.',
+  ],
+  audit: [
+    'Buka tab Jejak Audit.',
+    'Baca tindakan yang mengubah keadaan, yang tampil lebih dulu; nyalakan sakelar untuk ikut melihat pembacaan halaman.',
+    'Halaman ini hanya bisa dibaca; tidak ada yang bisa disunting atau dihapus.',
+  ],
+  pemetaan: [
+    'Buka Pemetaan UPT dari tombol di halaman lain.',
+    'Pilih berita yang unitnya belum dikenali, lalu tekan kandidat unit yang benar.',
+    'Bila tidak ada kandidat yang cocok, cari unitnya di pencarian bebas ke seluruh data induk.',
+    'Berita yang tidak terpetakan tidak pernah muncul di peta, jadi pekerjaan ini menentukan isi peta.',
+  ],
+  sinkronisasi: [
+    'Buka Sinkronisasi Sumber dari tombol di halaman lain.',
+    'Baca kapan tiap sumber terakhir ditarik dan berapa baris yang datang.',
+    'Bila ada kegagalan, sebabnya tertulis; hari yang sepi lebih sering berarti penarikan terhenti daripada tidak ada berita.',
+  ],
+  tren: [
+    'Buka tab Tren di Analisis Pemberitaan.',
+    'Baca ubin bertumbuh atau menyusut terhadap periode sebelumnya yang sama panjang.',
+    'Lihat tabel subkategori yang naik paling tajam untuk bahan laporan mingguan dan bulanan.',
+  ],
+  narasi: [
+    'Buka tab Narasi di Analisis Pemberitaan.',
+    'Baca bentuk tiap cerita: menanjak, berulang, bertahan, atau mereda.',
+    'Periksa pemantiknya dan ada tidaknya suara penyeimbang sebelum menyimpulkan.',
+  ],
+  jaringan: [
+    'Buka tab Kaitan di Analisis Pemberitaan.',
+    'Baca tebal garis sebagai seberapa sering dua hal muncul bersama, dan besar simpul sebagai jumlah publikasinya.',
+    'Gunakan untuk menjawab media mana yang mengangkat sebuah unit dan tema apa yang muncul di banyak unit sekaligus.',
+  ],
+  komando: [
+    'Buka tab Pusat Komando di Analisis Pemberitaan, atau Situation Room dari Deteksi Lonjakan.',
+    'Tampilkan di layar dinding; enam angka nasional terbaca dari jarak tiga meter.',
+    'Perhatikan waktu penyegaran terakhir di sudut layar.',
+  ],
+  peringatan: [
+    'Buka Daftar Peringatan lewat tombol Lihat semua di dasbor.',
+    'Baca kartu kejadian satu per satu; pita warna di tepi kiri menunjukkan kerawanannya.',
+    'Perhatikan labelnya: AWAL berarti belum ditelaah analis, RESMI berarti sudah diverifikasi dan boleh jadi dasar keputusan.',
+  ],
+  'berita-detail': [
+    'Buka sebuah berita dari Pusat Data Berita, dari kartu Berita Negatif, atau dari palet perintah.',
+    'Baca kartu Rekomendasi tindak lanjut di puncak: saran, alasannya, dan langkah yang disarankan.',
+    'Periksa dasar penilaian mesin, mutu penilaian, liputan serumpun, serta telaah dan tanggapan unit.',
+    'Setelah memeriksa ke unit atau sumber aslinya, pilih Hasil verifikasi pada formulir; tindakan ikut bergeser ke akibatnya, dan Anda tetap bebas mengubahnya.',
+    'Tulis catatan singkat: siapa yang dihubungi, apa yang ditemukan, apa yang akan dilakukan.',
+    'Tekan Simpan keputusan. Keputusan Anda mengalahkan saran mesin, dan perbedaannya tetap terbaca oleh yang lain.',
+  ],
+  panduan: [
+    'Baca kotak di puncak: ia menyebut peran Anda dan menjelaskan bahwa yang tampil hanya layar yang bisa Anda buka.',
+    'Mulai dari Alur kerja untuk peran Anda, yaitu urutan layar yang disarankan untuk satu hari.',
+    'Buka Cara memakai pada fitur yang sedang Anda cari, atau ketik namanya di kotak cari; hasil pencarian membuka tutorialnya otomatis.',
+    'Tekan Cetak panduan bila perlu salinan kertas. Pengelola pengguna juga melihat bagian Hak akses menurut peran di bawah.',
+  ],
+  profil: [
+    'Buka Profil Saya dari kaki menu samping.',
+    'Ubah nama, nama pengguna, atau kata sandi milik Anda sendiri.',
+    'Setiap peran boleh menyunting identitasnya sendiri, apa pun kewenangannya yang lain.',
+  ],
+}
+
+/**
+ * Alur kerja per peran pusat: urutan yang disarankan untuk satu hari.
+ *
+ * Yang ditulis hanya layar yang benar-benar bisa dibuka peran itu. Daftar hak
+ * aksesnya TIDAK ditulis di sini; halaman panduan menghitungnya dari
+ * lib/peran.js, sehingga tidak bisa berselisih dengan menu yang sebenarnya.
+ */
+export const ALUR_PERAN = {
+  super_admin: [
+    'Pemantauan Sistem, tab Kesehatan Sistem: pastikan penyalin sumber, perayap, dan penjadwal masih bekerja.',
+    'Dasbor Eksekutif dan Peta Kerawanan: lihat keadaan hari ini dan unit yang sedang mencuat.',
+    'Berita Negatif: baca saran tindak lanjut tiap peristiwa, dan catat keputusan bagi yang sudah diperiksa.',
+    'Laporan Berkala dan Lembar Infografis: susun atau unduh laporan harian dan mingguan.',
+    'Pengguna & Data Induk: terbitkan akun petugas baru, betulkan koordinat unit, dan periksa Jejak Audit secara berkala.',
+  ],
+  executive_decision_maker: [
+    'Peringatan Dini: baca tingkat risiko dan daftar hal yang menuntut keputusan.',
+    'Dasbor Eksekutif dan Peta Kerawanan: lihat keadaan dan unit yang sedang mencuat.',
+    'Berita Negatif: peristiwa bersaran Sidak adalah yang paling mendesak; Klarifikasi berarti cukup dijawab.',
+    'Keputusan Pimpinan: baca analisis dan rekomendasi, lalu centang yang disetujui.',
+    'Tindak Lanjut: periksa kemajuan putusan sebelumnya, terutama yang lewat tenggat.',
+    'Laporan Berkala dan Lembar Infografis sebagai bahan bacaan rapat.',
+  ],
+  media_intelligence_analyst: [
+    'Ruang Analis: lihat apa yang menuntut hari ini.',
+    'Kasus Intelijen, Antrean Telaah: setujui atau koreksi penilaian mesin atas berita yang menunggu.',
+    'Berita Negatif: untuk tiap peristiwa baca saran tindak lanjutnya, periksa ke unit atau sumber asli, lalu catat hasil verifikasi dan keputusan.',
+    'Bila perlu pemeriksaan lapangan, bentuk kasus dan terbitkan penugasan di Verifikasi Lapangan.',
+    'Laporan Berkala: susun laporan harian atau mingguan; kirim lewat Distribusi Telegram setelah memeriksa pratinjaunya.',
+    'Input Berita: masukkan isu viral yang belum tertangkap perayap.',
+  ],
+  evaluation_recommendation_analyst: [
+    'Ruang Analis: lihat apa yang menuntut hari ini.',
+    'Kasus Intelijen: baca kasus yang sedang berjalan.',
+    'Verifikasi Lapangan: baca laporan lapangan yang baru masuk.',
+    'Evaluasi dan Rekomendasi: sandingkan kata media dengan kata lapangan, lalu tulis rekomendasi.',
+    'Berita Negatif: baca saran tindak lanjut dan catat keputusan atas peristiwa yang sudah diperiksa.',
+    'Tindak Lanjut: nilai kemajuan butir pekerjaan yang sudah diputuskan.',
+  ],
+  news_data_operator: [
+    'Dasbor Eksekutif: periksa bilah kesehatan data di puncak, apakah berita baru benar-benar masuk.',
+    'Pusat Data Berita: cari duplikat dan periksa kelengkapan metadata.',
+    'Input Berita: masukkan isu viral yang belum tertangkap perayap, mengikuti manual di bawah.',
+    'Ruang Analis: lihat pekerjaan yang menunggu Anda.',
+  ],
+  field_verification_officer: [
+    'Verifikasi Lapangan: terima penugasan, isi laporan, dan unggah bukti temuan.',
+    'Tindak Lanjut: perbarui kemajuan butir yang menjadi tanggung jawab Anda.',
+    'Analisis Pemberitaan, tab Pusat Komando: baca keadaan nasional sekilas.',
+  ],
 }
 
 /* ----------------------------------------------------------------- manual */

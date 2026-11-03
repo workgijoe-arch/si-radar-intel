@@ -131,6 +131,7 @@ export const IZIN = {
     'lihat_dasbor', 'lihat_briefing', 'lihat_berita', 'lihat_berita_terverifikasi',
     'lihat_peta', 'lihat_tren', 'lihat_kasus', 'lihat_laporan_lapangan',
     'lihat_rekomendasi', 'putuskan_kasus', 'lihat_laporan', 'unduh_laporan',
+    'lihat_saran_tindak', 'catat_tindak_berita',
     'setujui_laporan', 'publikasi_laporan', 'lihat_peringatan', 'lihat_tindak_lanjut',
     'kelola_tindak_lanjut', 'lihat_lonjakan',
   ],
@@ -144,6 +145,7 @@ export const IZIN = {
     'lihat_tindak_lanjut', 'unggah_lampiran', 'tugaskan_lapangan', 'lihat_penugasan',
     'lihat_laporan_lapangan', 'lihat_sinkronisasi',
     'lihat_ruang_analis', 'kelola_aturan', 'lihat_lonjakan',
+    'lihat_saran_tindak', 'catat_tindak_berita',
   ],
 
   news_data_operator: [
@@ -168,6 +170,7 @@ export const IZIN = {
     'sunting_draf_laporan', 'lihat_laporan', 'unduh_laporan', 'lihat_tren',
     'lihat_tindak_lanjut', 'kelola_tindak_lanjut', 'perbarui_tindak_lanjut',
     'lihat_ruang_analis', 'kelola_aturan',
+    'lihat_saran_tindak', 'catat_tindak_berita',
   ],
 
   /*
@@ -280,6 +283,17 @@ export const MENU = [
          tidak punya butir menu: ia dibuka dari tombol di halaman ini.
       */
       { id: 'deteksi-lonjakan', label: 'Deteksi Lonjakan', ikon: 'tren', izin: 'lihat_lonjakan' },
+      /*
+         Peta Kerawanan kembali berdiri di menu (2 November 2026, SI-RADAR INTEL).
+
+         Sejak 23 September 2026 petanya hanya tergambar di dalam Dasbor
+         Eksekutif, bersama seluruh isi dasbor lain; yang ingin melihat unit mana
+         yang sedang mencuat harus menggulir sampai ke bawahnya. Halaman mandiri
+         ini memberi petanya satu layar penuh, pilihan rentang waktu, dan daftar
+         unit yang berita negatifnya naik. Izinnya tetap `lihat_peta`, sama dengan
+         peta di dasbor, sehingga tidak ada peran yang bertambah haknya.
+      */
+      { id: 'peta', label: 'Peta Kerawanan', ikon: 'peta', izin: 'lihat_peta' },
       // Kanal negatif berdiri sendiri di menu. Isu yang merugikan institusi
       // tidak boleh dicari dulu di dalam daftar gabungan sebelum bisa dibaca.
       { id: 'negatif', label: 'Berita Negatif', ikon: 'peringatan', izin: 'lihat_dasbor', lencana: 'negatif' },

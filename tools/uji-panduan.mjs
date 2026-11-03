@@ -28,8 +28,8 @@
  *   node tools/uji-panduan.mjs
  */
 
-import { MENU, MENU_KANWIL, MENU_UPT } from '../web/js/lib/peran.js'
-import { RUANG, TANPA_MENU, MANUAL_KIRIM, JENDELA_LAPORAN } from '../web/js/lib/panduan.js'
+import { MENU, MENU_KANWIL, MENU_UPT, PERAN, adalahEksternal } from '../web/js/lib/peran.js'
+import { RUANG, TANPA_MENU, MANUAL_KIRIM, JENDELA_LAPORAN, LANGKAH, ALUR_PERAN } from '../web/js/lib/panduan.js'
 import { readFileSync } from 'node:fs'
 import { join, dirname } from 'node:path'
 import { fileURLToPath } from 'node:url'
@@ -151,6 +151,43 @@ if (!JENDELA_LAPORAN.kirim.startsWith('05.30')) {
   lapor(`Panduan menyebut jam kirim ${JENDELA_LAPORAN.kirim}, sedangkan penjadwalnya 05.30 WIB.`)
 }
 
+/* --- 6: tutorial per fitur dan alur per peran ------------------------- */
+
+/*
+   Tutorial adalah janji "begini cara memakainya", dan janji yang tertinggal
+   lebih buruk daripada tidak ada. Tiga cara ia berbohong tanpa satu pun galat:
+   fitur pusat baru tanpa tutorial (yang mencarinya hanya menemukan keterangan,
+   bukan jalan), tutorial yatim bagi layar yang sudah dihapus, dan peran pusat
+   baru tanpa alur kerja (halaman panduannya terbuka tanpa bagian utamanya).
+*/
+const idPusat = Object.keys(RUANG.pusat.butir)
+for (const id of [...idPusat, ...Object.keys(TANPA_MENU)]) {
+  const langkah = LANGKAH[id]
+  if (!langkah || langkah.length < 3) {
+    lapor(`Tutorial "${id}": belum ada atau kurang dari tiga langkah di LANGKAH (web/js/lib/panduan.js).`)
+  }
+}
+for (const id of Object.keys(LANGKAH)) {
+  if (!idPusat.includes(id) && !(id in TANPA_MENU)) {
+    lapor(`Tutorial "${id}" tertinggal: tidak ada fitur pusat atau layar tanpa menu dengan nama itu.`)
+  }
+}
+for (const [id, langkah] of Object.entries(LANGKAH)) {
+  langkah.forEach((l, i) => {
+    if (String(l).trim().length < 20) lapor(`Tutorial ${id}, langkah ${i + 1}: terlalu pendek untuk dibaca.`)
+    if (/<[a-z/]/i.test(l)) lapor(`Tutorial ${id}, langkah ${i + 1}: memuat tanda HTML; katalog ini teks polos.`)
+  })
+}
+
+const perPusat = Object.keys(PERAN).filter((r) => !adalahEksternal(r))
+for (const r of perPusat) {
+  const alur = ALUR_PERAN[r]
+  if (!alur || alur.length < 3) lapor(`Peran "${r}": belum punya alur kerja (minimal tiga langkah) di ALUR_PERAN.`)
+}
+for (const r of Object.keys(ALUR_PERAN)) {
+  if (!perPusat.includes(r)) lapor(`ALUR_PERAN memuat "${r}", yang bukan peran pusat yang dikenal lib/peran.js.`)
+}
+
 /* ------------------------------------------------------------- keluaran */
 
 const jumlahFitur = Object.values(RUANG).reduce((n, r) => n + Object.keys(r.butir).length, 0)
@@ -163,4 +200,5 @@ if (temuan.length) {
 }
 
 console.log(`Panduan lengkap: ${jumlahFitur} fitur di ${Object.keys(RUANG).length} ruang, `
-  + `${Object.keys(TANPA_MENU).length} layar tanpa menu, ${MANUAL_KIRIM.length} langkah manual.`)
+  + `${Object.keys(TANPA_MENU).length} layar tanpa menu, ${MANUAL_KIRIM.length} langkah manual, `
+  + `${Object.keys(LANGKAH).length} tutorial, ${Object.keys(ALUR_PERAN).length} alur peran.`)

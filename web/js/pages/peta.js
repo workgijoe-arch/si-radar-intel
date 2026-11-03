@@ -43,10 +43,10 @@
  */
 
 import { kartu, keping, pesanSistem, roti } from '../ui/komponen.js'
-import { amankan, angka, ringkas, jarakWaktu, nadaUrgensi } from '../lib/format.js'
+import { amankan, angka, ringkas, jarakWaktu, nadaUrgensi, hariWib } from '../lib/format.js'
 import { ikon } from '../lib/ikon.js'
 import { ambil, pesanRamah } from '../lib/api.js'
-import { KERAWANAN, tingkatKerawanan, dasar } from '../lib/hitung.js'
+import { KERAWANAN, tingkatKerawanan, dasar, uptNaik, hariBerita } from '../lib/hitung.js'
 import { ember } from '../lib/sentimen.js'
 import { belumTerpetakan } from '../lib/unit-terpetakan.js'
 import { BATAS, DARATAN, TETANGGA } from '../lib/peta-indonesia.js'
@@ -114,6 +114,42 @@ const keadaanPeta = {
   pandang: null,
   /** Mekar barat-ke-timur hanya sekali, pada tampilan pertama sesudah data sampai. */
   sudahMekar: false,
+  /**
+   * Rentang waktu halaman mandiri, dalam hari kalender Jakarta: '1', '7', '30',
+   * atau 'semua'. Bawaannya tujuh hari, karena pertanyaan halaman ini adalah
+   * "unit mana yang sedang mencuat", dan jawabannya tidak ada di arsip tiga bulan.
+   * Dasbor tidak memakainya; ia memberi peta berita sebulan.
+   */
+  rentang: '7',
+  /** Unit yang berita negatifnya naik pada rentang itu; diisi gambar(). */
+  mencuat: [],
+  labelMencuat: '',
+}
+
+const RENTANG = [['1', 'Hari ini'], ['7', '7 hari'], ['30', '30 hari'], ['semua', 'Semua termuat']]
+
+/** Jendela hari untuk rentang yang dipilih; null berarti seluruh arsip yang termuat. */
+function jendelaRentang() {
+  if (keadaanPeta.rentang === 'semua') return null
+  const n = Number(keadaanPeta.rentang) || 7
+  return { mulai: hariWib(-(n - 1)), selesai: hariWib(0), n }
+}
+
+/**
+ * Unit yang berita negatifnya naik dibanding rentang sebelumnya yang sama
+ * panjang. Dihitung `uptNaik()` — mesin yang sama dengan laporan dan Peringatan
+ * Dini — bukan di sini. Pada rentang "semua" yang dipakai tujuh hari, sebab
+ * tidak ada rentang sebelumnya untuk dibandingkan dengan seluruh arsip.
+ */
+function hitungMencuat(berita) {
+  const j = jendelaRentang() || { mulai: hariWib(-6), selesai: hariWib(0), n: 7 }
+  keadaanPeta.labelMencuat = j.n === 1
+    ? 'hari ini dibanding kemarin'
+    : `${j.n} hari terakhir dibanding ${j.n} hari sebelumnya`
+  return uptNaik(berita, { mulai: j.mulai, selesai: j.selesai, maks: 40, hanyaNegatif: true })
+    .filter((r) => r.jumlah > 0)
+    .sort((a, b) => b.delta - a.delta || b.jumlah - a.jumlah || a.nama.localeCompare(b.nama))
+    .slice(0, 8)
 }
 
 const PANDANG_AWAL = () => [
@@ -350,6 +386,36 @@ function panelSamping(titik) {
     : null
   if (dipilih) return panelUnit(dipilih)
 
+  // Hanya unit yang masih tergambar pada saringan ini; menunjuk unit yang
+  // titiknya disembunyikan legenda akan membuka panel untuk sesuatu yang tidak
+  // terlihat di peta.
+  const mencuat = keadaanPeta.mencuat
+    .map((r) => ({ r, u: titik.find((x) => x.nama === r.nama) }))
+    .filter((x) => x.u)
+
+  const blokMencuat = mencuat.length ? `
+      <div class="peta-panel-kop">
+        <span class="label-mono">Sedang mencuat</span>
+        <span class="mini-teks samar-teks">${amankan(keadaanPeta.labelMencuat)}</span>
+      </div>
+      <ul class="peta-daftar">
+        ${mencuat.map(({ r, u }) => `
+          <li>
+            <button data-unit="${amankan(u.nama)}">
+              <i style="background:${warna(u.tingkat.kode)}"></i>
+              <span>
+                <span class="peta-daftar-nama">${amankan(u.nama)}</span>
+                <span class="mini-teks samar-teks">${amankan(u.kanwil || u.provinsi || '')}</span>
+              </span>
+              <b class="angka" title="Berita negatif pada rentang ini">${angka(r.jumlah)}</b>
+              <span class="peta-naik ${r.delta > 0 ? 'naik' : r.delta < 0 ? 'turun' : ''}"
+                    title="Dibanding rentang sebelumnya: ${angka(r.sebelum)} berita negatif">
+                ${r.delta > 0 ? `▲ +${angka(r.delta)}` : r.delta < 0 ? `▼ ${angka(r.delta)}` : '±0'}
+              </span>
+            </button>
+          </li>`).join('')}
+      </ul>` : ''
+
   const gawat = titik
     .filter((u) => ['kritis', 'rawan'].includes(u.tingkat.kode))
     .sort((a, b) => {
@@ -360,7 +426,8 @@ function panelSamping(titik) {
 
   return `
     <div class="peta-panel">
-      <div class="peta-panel-kop">
+      ${blokMencuat}
+      <div class="peta-panel-kop"${blokMencuat ? ' style="margin-top:14px"' : ''}>
         <span class="label-mono">Unit paling disorot</span>
         <span class="mini-teks samar-teks">${angka(gawat.length)} teratas</span>
       </div>
@@ -506,7 +573,18 @@ export function halamanPeta({ keadaan, isi, tertanam = false }) {
       return
     }
 
-    const semua = susunTitik(keadaanPeta.unit, keadaan.berita || [])
+    // Halaman mandiri memotong menurut rentang yang dipilih; dasbor memberi
+    // peta berita sebulan dan tidak boleh dipotong lagi di sini.
+    const jendela = tertanam ? null : jendelaRentang()
+    const beritaPeta = jendela
+      ? (keadaan.berita || []).filter((b) => {
+        const h = hariBerita(b)
+        return h && h >= jendela.mulai && h <= jendela.selesai
+      })
+      : (keadaan.berita || [])
+    keadaanPeta.mencuat = tertanam ? [] : hitungMencuat(keadaan.berita || [])
+
+    const semua = susunTitik(keadaanPeta.unit, beritaPeta)
     tampil = saringTitik(semua)
     const kanwilAda = [...new Set(semua.map((u) => u.kanwil).filter(Boolean))].sort()
     const takTerpetakan = (keadaan.berita || []).filter((b) => belumTerpetakan(b.nama_upt)).length
@@ -533,6 +611,12 @@ export function halamanPeta({ keadaan, isi, tertanam = false }) {
             ${['Semua jenis', ...JENIS].map((j) =>
               `<option${j === keadaanPeta.jenis ? ' selected' : ''}>${amankan(j)}</option>`).join('')}
           </select>
+
+          ${tertanam ? '' : `
+          <div class="segmen" data-peran="rentang" role="group" aria-label="Rentang waktu berita">
+            ${RENTANG.map(([k, l]) =>
+              `<button data-rentang="${k}" aria-pressed="${keadaanPeta.rentang === k}">${amankan(l)}</button>`).join('')}
+          </div>`}
 
           <button class="tbl kecil${keadaanPeta.hanyaBermasalah ? ' utama' : ''}"
                   data-aksi="hanya-bermasalah"
@@ -1037,6 +1121,14 @@ export function halamanPeta({ keadaan, isi, tertanam = false }) {
     const titikUnit = ev.target.closest('[data-unit]')
     if (titikUnit) { pilih(titikUnit.dataset.unit); return }
 
+    const rentang = ev.target.closest('[data-rentang]')?.dataset.rentang
+    if (rentang) {
+      keadaanPeta.rentang = rentang
+      keadaanPeta.dipilih = null
+      gambar()
+      return
+    }
+
     const tingkat = ev.target.closest('[data-tingkat]')?.dataset.tingkat
     if (tingkat) {
       if (keadaanPeta.sembunyi.has(tingkat)) keadaanPeta.sembunyi.delete(tingkat)
@@ -1175,5 +1267,5 @@ export function halamanPeta({ keadaan, isi, tertanam = false }) {
   gambar()
   muat()
 
-  return { judul: 'Peta Sebaran', sub: subjudul() }
+  return { judul: 'Peta Kerawanan', sub: subjudul() }
 }

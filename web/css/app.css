@@ -1473,6 +1473,24 @@ table.tabel tbody td { border-bottom: 1px solid var(--line-3); }
 }
 @media (hover: hover) { .peristiwa:hover { box-shadow: var(--bayang-2); } }
 .peristiwa-kop { display: flex; align-items: center; gap: 7px; flex-wrap: wrap; }
+
+/* Saran tindak lanjut pada kartu peristiwa. Pita di tepi kiri mengikuti
+   tindakannya, sama seperti kartu peristiwa mengikuti urgensinya: yang
+   memindai daftar membaca warna lebih dulu, tulisan sesudahnya. */
+.saran-tindak {
+  border-left: 3px solid var(--line-2);
+  padding: 6px 0 6px 10px;
+  display: grid;
+  gap: 4px;
+}
+.saran-tindak[data-tindak="sidak"] { border-left-color: var(--kritis, #D64545); }
+.saran-tindak[data-tindak="klarifikasi"] { border-left-color: var(--sedang, #D69E2E); }
+.saran-tindak[data-tindak="verifikasi"] { border-left-color: var(--rendah, #4A7FC1); }
+.saran-kop { display: flex; align-items: center; gap: 7px; flex-wrap: wrap; }
+.saran-tindak summary { cursor: pointer; font-size: 11.5px; color: var(--ink-3); }
+.saran-alasan, .saran-langkah { margin: 6px 0 0; padding-left: 18px; font-size: 12.5px; line-height: 1.5; color: var(--ink-2); }
+.saran-langkah { margin-bottom: 8px; }
+.saran-ringkas { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; margin: 0 0 12px; }
 .peristiwa-judul { font-size: 13.5px; font-weight: 650; line-height: 1.4; }
 .peristiwa-kaki {
   display: flex;
@@ -6584,3 +6602,19 @@ table.tabel button.judul-buka:hover { color: var(--accent); text-decoration: und
   .kartu { break-inside: avoid; box-shadow: none; }
   .brief-rapat table.tabel { font-size: 11px; }
 }
+
+/* Kartu rekomendasi di halaman detail berita. */
+.saran-besar { padding: 8px 0 8px 12px; }
+.saran-form { display: grid; gap: 10px; margin-top: 14px; padding-top: 12px; border-top: 1px solid var(--line-3); }
+.saran-isian { display: grid; gap: 4px; font-size: 12.5px; color: var(--ink-2); }
+.saran-isian > span:first-child { font-weight: 600; }
+
+/* Penanda naik/turun pada daftar "Sedang mencuat" di Peta Kerawanan. */
+.peta-naik { font-family: var(--mono); font-size: 11px; font-weight: 600; color: var(--ink-3); white-space: nowrap; }
+.peta-naik.naik { color: var(--kritis, #D64545); }
+.peta-naik.turun { color: var(--positif, #2E9E6B); }
+
+/* Tutorial di tiap fitur pada halaman Panduan. */
+.panduan-langkah { margin-top: 10px; border-top: 1px solid var(--line-3); padding-top: 8px; }
+.panduan-langkah > summary { cursor: pointer; font-size: 12.5px; font-weight: 600; color: var(--ink-2); }
+.panduan-langkah .langkah { margin-top: 8px; }

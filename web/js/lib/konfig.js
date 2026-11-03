@@ -74,6 +74,18 @@ export const KONFIG = {
     pemasyarakatan: 'assets/lambang-pemasyarakatan.png',
   },
 
+  /**
+     Ruang yang dijelaskan di halaman Panduan, selain ruang milik pembacanya.
+
+     SI-RADAR INTEL dipakai Subdirektorat Intelijen di pusat; peran kantor
+     wilayah dan unit tidak diterbitkan di sini. Menjelaskan ruang yang tidak
+     pernah dihuni siapa pun hanya membuat pembacanya bertanya-tanya apakah
+     mereka salah masuk. Peran daerah yang kelak diterbitkan tetap melihat
+     ruangnya sendiri; yang disembunyikan hanya ruang yang bukan miliknya.
+     Isi lengkapnya: ['pusat', 'wilayah', 'unit'] (nilai di Trans-Siber PAS).
+  */
+  ruangPanduan: ['pusat'],
+
   instansi: 'Direktorat Pengamanan dan Intelijen',
   /**
      Singkatan resmi direktorat, huruf besar seluruhnya.

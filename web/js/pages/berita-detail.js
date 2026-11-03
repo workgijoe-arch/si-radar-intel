@@ -48,6 +48,8 @@ import {
 import { ikon } from '../lib/ikon.js'
 import { KONFIG } from '../lib/konfig.js'
 import { ambil, pesanRamah } from '../lib/api.js'
+import { sarankanTindak, layakDisarankan, TINDAKAN, HASIL_VERIFIKASI } from '../lib/tindak-lanjut.js'
+import { muatKeputusan, keputusanSaatIni, simpanKeputusan } from '../lib/keputusan-tindak.js'
 import { punyaIzin } from '../lib/peran.js'
 import { belumTerpetakan } from '../lib/unit-terpetakan.js'
 import { kenaliPenerbit } from '../lib/penerbit.js'
@@ -268,6 +270,126 @@ function panelTelaah(b) {
     </dl>`
 }
 
+/* ------------------------------------------------------- saran tindak lanjut */
+
+const DASAR = { analis: 'Diputuskan analis', unit: 'Menurut sikap unit', mesin: 'Saran mesin' }
+
+/**
+ * Kartu rekomendasi tindak lanjut.
+ *
+ * Tiga bagian dalam satu kartu: saran beserta alasannya (selalu), langkah yang
+ * disarankan, dan formulir keputusan (hanya bagi yang berhak mencatat). Ketiganya
+ * di satu tempat karena alasan yang sama dengan seluruh halaman ini: orang yang
+ * memutuskan harus bisa melihat dasar saran di sebelah tombol yang ia tekan.
+ */
+function panelTindak(b, keadaan, media, { pesan = null } = {}) {
+  const peran = keadaan.profil?.role
+  if (!layakDisarankan(b)) {
+    return pesanSistem(
+      'Saran tindak lanjut hanya diberikan untuk berita negatif yang ikut dihitung. '
+      + 'Berita ini positif, netral, di luar lingkup, atau sudah dinyatakan tidak valid.',
+      'netral', 'info')
+  }
+
+  const keputusan = keputusanSaatIni().get(b.id) || null
+  const s = sarankanTindak(b, { media, keputusan })
+  const bolehCatat = punyaIzin(peran, 'catat_tindak_berita')
+
+  const formulir = bolehCatat ? `
+    <div class="saran-form" data-peran="form-tindak">
+      <div class="label-mono">Catat keputusan</div>
+      <label class="saran-isian">
+        <span>Hasil verifikasi</span>
+        <select class="pilihan" name="hasil">
+          <option value="">Belum diperiksa</option>
+          ${HASIL_VERIFIKASI.map((h) => `<option value="${amankan(h.kode)}"${s.hasil === h.kode ? ' selected' : ''}>${amankan(h.kode)} — ${amankan(h.ket)}</option>`).join('')}
+        </select>
+      </label>
+      <label class="saran-isian">
+        <span>Tindakan</span>
+        <select class="pilihan" name="tindak">
+          ${TINDAKAN.map((x) => `<option value="${x.kode}"${s.kode === x.kode ? ' selected' : ''}>${amankan(x.label)}</option>`).join('')}
+        </select>
+      </label>
+      <label class="saran-isian">
+        <span>Catatan <span class="samar-teks">(maksimal 1000 huruf)</span></span>
+        <textarea class="masukan" name="catatan" rows="3" maxlength="1000"
+                  placeholder="Siapa yang dihubungi, apa yang ditemukan, apa yang akan dilakukan">${amankan(keputusan?.catatan || '')}</textarea>
+      </label>
+      <div class="baris gap-6">
+        ${tombol({ label: keputusan ? 'Perbarui keputusan' : 'Simpan keputusan', ikon: 'centang', gaya: 'utama', aksi: 'simpan-tindak' })}
+        ${KONFIG.mode === 'demo'
+          ? '<span class="mini-teks samar-teks">Mode peragaan: keputusan hanya tersimpan sampai halaman dimuat ulang.</span>' : ''}
+      </div>
+    </div>` : ''
+
+  return `
+    ${pesan ? pesanSistem(amankan(pesan), 'positif', 'centang') : ''}
+    <div class="saran-tindak saran-besar" data-tindak="${amankan(s.kode)}">
+      <div class="saran-kop">
+        ${keping(s.label, s.nada)}
+        <span class="mini-teks samar-teks">${amankan(DASAR[s.dasar] || '')}${s.oleh
+          ? ` · ${amankan(s.oleh)}, ${amankan(tanggalJam(s.pada))}` : ''}</span>
+      </div>
+      ${s.berbeda ? `<p class="mini-teks" style="margin:4px 0 0">Mesin menyarankan <b>${amankan(s.mesin.pendek)}</b>;
+        analis memutuskan berbeda. Alasan mesin: ${amankan(s.mesin.alasan.join(' '))}</p>` : ''}
+      <ul class="saran-alasan">${s.alasan.map((a) => `<li>${amankan(a)}</li>`).join('')}</ul>
+      <div class="label-mono" style="margin-top:6px">Langkah yang disarankan</div>
+      <ol class="saran-langkah">${s.langkah.map((l) => `<li>${amankan(l)}</li>`).join('')}</ol>
+    </div>
+    ${formulir}
+    <p class="mini-teks samar-teks" style="margin:8px 0 0">
+      Mesin menyarankan, analis memutuskan. Saran dihitung dari subkategori, urgensi, kualitas
+      dan jumlah media, serta sikap unit; ia bukan pengganti penilaian lapangan.
+    </p>`
+}
+
+/**
+ * Pemuatan keputusan, penyegaran panel, dan penyimpanan.
+ *
+ * Penyimak dipasang pada `isi` dengan delegasi, bukan pada tombolnya: panel
+ * digambar ulang setiap kali keputusan tersimpan, dan penyimak yang menempel
+ * pada tombol lama hilang bersamanya tanpa pesan apa pun.
+ */
+function pasangTindak(isi, keadaan, b, media) {
+  const segarkan = (opsi) => {
+    const wadah = isi.querySelector('#detail-tindak')
+    if (wadah) wadah.innerHTML = panelTindak(b, keadaan, media, opsi)
+  }
+
+  muatKeputusan().then(() => segarkan())
+
+  isi.addEventListener('change', (ev) => {
+    if (!ev.target.matches('#detail-tindak [name="hasil"]')) return
+    // Hasil verifikasi yang dipilih menggeser tindakan ke yang menjadi akibatnya;
+    // analis tetap bebas mengubahnya sesudah itu.
+    const h = HASIL_VERIFIKASI.find((x) => x.kode === ev.target.value)
+    const pilih = isi.querySelector('#detail-tindak [name="tindak"]')
+    if (h && pilih) pilih.value = h.tindakan
+  })
+
+  isi.addEventListener('click', async (ev) => {
+    const tombolSimpan = ev.target.closest('#detail-tindak [data-aksi="simpan-tindak"]')
+    if (!tombolSimpan || tombolSimpan.disabled) return
+    const bidang = (n) => isi.querySelector(`#detail-tindak [name="${n}"]`)?.value || ''
+
+    tombolSimpan.disabled = true
+    try {
+      await simpanKeputusan({
+        beritaId: b.id,
+        tindakan: bidang('tindak'),
+        hasil: bidang('hasil'),
+        catatan: bidang('catatan'),
+        oleh: keadaan.profil?.username || keadaan.profil?.full_name || 'peragaan',
+      })
+      segarkan({ pesan: 'Keputusan tersimpan.' })
+    } catch (e) {
+      tombolSimpan.disabled = false
+      roti(pesanRamah(e), 'kritis')
+    }
+  })
+}
+
 /* ----------------------------------------------------------------- halaman */
 
 export function halamanBeritaDetail({ keadaan, isi }) {
@@ -297,6 +419,7 @@ export function halamanBeritaDetail({ keadaan, isi }) {
 
   const penerbit = kenaliPenerbit(b)
   const emberIni = emberDari(ember(b))
+  const bolehSaran = punyaIzin(keadaan.profil?.role, 'lihat_saran_tindak')
   const bolehTelaah = punyaIzin(keadaan.profil?.role, 'telaah_berita')
     || punyaIzin(keadaan.profil?.role, 'telaah_wilayah')
 
@@ -336,6 +459,12 @@ export function halamanBeritaDetail({ keadaan, isi }) {
       <div class="kisi kisi-utama-samping">
         <div class="tumpuk">
 
+          ${bolehSaran ? kartu({
+            judul: 'Rekomendasi tindak lanjut',
+            ket: 'Perlu ditangani langsung, cukup diklarifikasi, atau diperiksa dulu.',
+            isi: `<div id="detail-tindak">${panelTindak(b, keadaan, peristiwa?.jumlah_media || 1)}</div>`,
+          }) : ''}
+
           ${/* --------------------------------------------------- ringkasan */''}
           ${kartu({
             judul: 'Ringkasan',
@@ -349,7 +478,7 @@ export function halamanBeritaDetail({ keadaan, isi }) {
               ${b.caption_manual && b.caption_manual !== b.ringkasan
                 ? `<p class="detail-ringkasan"><span class="label-mono">Isi yang dimasukkan petugas</span><br>
                    ${teks(b.caption_manual)}</p>` : ''}
-              ${b.rekomendasi ? `<p class="detail-ringkasan"><span class="label-mono">Saran tindak lanjut dari mesin</span><br>
+              ${b.rekomendasi ? `<p class="detail-ringkasan"><span class="label-mono">Catatan rekomendasi dari lembar sumber</span><br>
                  ${teks(b.rekomendasi)}</p>` : ''}`,
           })}
 
@@ -455,6 +584,7 @@ export function halamanBeritaDetail({ keadaan, isi }) {
     </div>`
 
   pasangPenyimak(isi, keadaan, b)
+  if (bolehSaran) pasangTindak(isi, keadaan, b, peristiwa?.jumlah_media || 1)
   muatLengkap(isi, b)
 
   return {
