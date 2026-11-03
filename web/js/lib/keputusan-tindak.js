@@ -19,7 +19,7 @@
 import { KONFIG } from './konfig.js'
 import { ambil, sisip, perbarui } from './api.js'
 
-const KOLOM = 'berita_id,tindakan,hasil_verifikasi,catatan,diputuskan_oleh,diputuskan_pada'
+const KOLOM = 'berita_id,tindakan,hasil_verifikasi,catatan,evaluasi_sumber,evaluasi_informasi,diputuskan_oleh,diputuskan_pada'
 
 const simpanan = {
   peta: new Map(),
@@ -87,11 +87,17 @@ export async function muatKeputusan({ paksa = false } = {}) {
  * Nama pemutus dan waktunya diisi basis data lewat pemicu, bukan dikirim dari
  * sini; yang dikembalikan adalah baris yang benar-benar tersimpan.
  */
-export async function simpanKeputusan({ beritaId, tindakan, hasil = null, catatan = '', oleh = 'peragaan' }) {
+export async function simpanKeputusan({
+  beritaId, tindakan, hasil = null, catatan = '', oleh = 'peragaan',
+  evaluasiSumber = null, evaluasiInformasi = null,
+}) {
   const isi = {
     tindakan,
     hasil_verifikasi: hasil || null,
     catatan: String(catatan || '').trim().slice(0, 1000) || null,
+    // Penilaian SIP (lib/sip.js). Kosong berarti "pakai saran mesin".
+    evaluasi_sumber: evaluasiSumber || null,
+    evaluasi_informasi: evaluasiInformasi || null,
   }
 
   if (KONFIG.mode === 'demo') {

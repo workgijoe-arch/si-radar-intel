@@ -190,14 +190,20 @@ const PUSAT = {
     isi: 'Dua keluaran untuk periode yang sama. Pertama, laporan intelijen berkala: pilih '
       + 'periodenya, tekan satu tombol, dan berkasnya jadi lengkap dengan diagram serta '
       + 'daftar sumbernya, siap dicetak atau disimpan sebagai PDF lewat menu cetak peramban. '
-      + 'Kedua, ekspor daftar berita: satu berkas CSV berisi berita pada periode itu, '
-      + 'seluruhnya atau hanya yang negatif, dengan pilihan cepat Hari ini, Kemarin, 7 hari '
-      + 'terakhir, dan 30 hari terakhir.',
+      + 'Kedua, ekspor daftar berita: buku kerja Excel berisi berita pada periode itu, '
+      + 'seluruhnya atau hanya yang negatif, berurut negatif dan prioritas lebih dulu, dengan '
+      + 'pilihan cepat Hari ini, Kemarin, 7 hari terakhir, dan 30 hari terakhir. Keduanya '
+      + 'ditandai menurut Standar Intelijen Pemasyarakatan 2023: klasifikasi (SR, R, YB, YPM), '
+      + 'prioritas (Mendesak, Segera, Rutin), kode penyebarluasan (A-E), serta evaluasi sumber '
+      + '(A-E) dan informasi (1-5) per berita.',
     guna: 'Ekspor mandiri harian dan mingguan, tanpa menunggu siapa pun menjalankan perintah di '
       + 'belakang layar. Laporan memuat pemberitaan negatif, yaitu daftar hal yang menuntut '
-      + 'tindakan; CSV memuat daftar mentahnya untuk diolah di Excel.',
+      + 'tindakan; buku kerja Excel memuat daftar lengkapnya beserta peringatan dini dan usulan '
+      + 'pemecahan masalah tiap berita negatif.',
     catatan: 'Satu hari laporan berarti pukul 00.00 sampai 23.59 WIB, sama persis dengan '
-      + 'jendela yang dipakai laporan harian Telegram.',
+      + 'jendela yang dipakai laporan harian Telegram. Klasifikasi paling rendah dihitung dari '
+      + 'isi berkas dan tidak bisa diturunkan; kode penyebarluasan B, C, dan D menghasilkan '
+      + 'versi edaran yang identitas petugasnya dikaburkan. Setiap unduhan tercatat di Jejak Audit.',
   },
   infografis: {
     isi: 'Satu lembar gambar untuk laporan harian atau mingguan, memuat sisi baik dan sisi '
@@ -622,9 +628,11 @@ export const LANGKAH = {
     'Buka Laporan Berkala. Pilih jenis laporan: Harian, Mingguan, atau Bulanan; tanggalnya terisi otomatis.',
     'Ubah tanggal Mulai dan Sampai bila perlu. Satu hari adalah pukul 00.00 sampai 23.59 WIB menurut waktu berita ditangkap.',
     'Tekan Susun laporan. Berkas dibuat di peramban Anda sendiri, tanpa mengirim data ke pihak lain.',
+    'Pada kartu Penandaan produk intelijen, periksa klasifikasi, prioritas, dan kode penyebarluasan; isi Ditujukan kepada bila ada. Klasifikasi paling rendah sudah dihitung dari isinya.',
+    'Centang pernyataan perlakuan. Tanpa centang itu tombol unduh tidak aktif.',
     'Pada Laporan siap, tekan Buka, atau Unduh HTML lalu cetak sebagai PDF lewat menu Cetak peramban.',
     'Untuk mengirimnya ke pimpinan, tekan Kirim lewat Telegram; halaman itu menampilkan pratinjau lebih dulu.',
-    'Untuk daftar berita mentah, pakai kartu Ekspor daftar berita: pilih Hari ini, Kemarin, 7 hari terakhir, atau 30 hari terakhir, lalu unduh CSV seluruh berita atau hanya yang negatif.',
+    'Untuk daftar berita, pakai kartu Ekspor daftar berita: pilih Hari ini, Kemarin, 7 hari terakhir, atau 30 hari terakhir, lalu Unduh Excel seluruh berita atau hanya yang negatif. Lembar Keterangan di dalamnya menjelaskan setiap kode.',
     'Bila muncul peringatan arsip terpotong, periode yang Anda pilih lebih panjang dari arsip yang termuat; persempit periodenya.',
   ],
   infografis: [

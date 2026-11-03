@@ -1474,6 +1474,30 @@ table.tabel tbody td { border-bottom: 1px solid var(--line-3); }
 @media (hover: hover) { .peristiwa:hover { box-shadow: var(--bayang-2); } }
 .peristiwa-kop { display: flex; align-items: center; gap: 7px; flex-wrap: wrap; }
 
+/* Penandaan SIP di Laporan Berkala. Empat isian sejajar di layar lebar,
+   bertumpuk di ponsel; pernyataan persetujuan di bawahnya selebar kartu. */
+.sip-kisi {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(210px, 1fr));
+  gap: 12px;
+}
+.sip-kisi label { display: block; margin-bottom: 5px; }
+.sip-kisi .masukan { width: 100%; }
+.sip-kisi .mini-teks { margin-top: 4px; }
+.sip-setuju {
+  display: flex;
+  gap: 10px;
+  align-items: flex-start;
+  margin-top: 12px;
+  padding: 10px 12px;
+  border: 1px solid var(--line-2);
+  border-radius: var(--r-2);
+  font-size: 13px;
+  line-height: 1.5;
+  cursor: pointer;
+}
+.sip-setuju input { margin-top: 3px; flex: none; }
+
 /* Saran tindak lanjut pada kartu peristiwa. Pita di tepi kiri mengikuti
    tindakannya, sama seperti kartu peristiwa mengikuti urgensinya: yang
    memindai daftar membaca warna lebih dulu, tulisan sesudahnya. */

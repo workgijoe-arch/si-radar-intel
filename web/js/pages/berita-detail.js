@@ -50,6 +50,10 @@ import { KONFIG } from '../lib/konfig.js'
 import { ambil, pesanRamah } from '../lib/api.js'
 import { sarankanTindak, layakDisarankan, TINDAKAN, HASIL_VERIFIKASI } from '../lib/tindak-lanjut.js'
 import { muatKeputusan, keputusanSaatIni, simpanKeputusan } from '../lib/keputusan-tindak.js'
+import {
+  evaluasiBerita, sumberMesin, informasiMesin, prioritas, prioritasBerita,
+  labelSumber, labelInformasi, EVALUASI_SUMBER, EVALUASI_INFORMASI,
+} from '../lib/sip.js'
 import { punyaIzin } from '../lib/peran.js'
 import { belumTerpetakan } from '../lib/unit-terpetakan.js'
 import { kenaliPenerbit } from '../lib/penerbit.js'
@@ -295,9 +299,29 @@ function panelTindak(b, keadaan, media, { pesan = null } = {}) {
   const s = sarankanTindak(b, { media, keputusan })
   const bolehCatat = punyaIzin(peran, 'catat_tindak_berita')
 
+  // Penilaian SIP 2023. Pilihan kosong berarti "ikuti saran mesin", dan
+  // labelnya menyebut saran itu supaya analis tahu apa yang ia setujui.
+  const ev = evaluasiBerita(b, { media, keputusan })
+  const mesinSumber = sumberMesin(b)
+  const mesinInfo = informasiMesin(b, { media, keputusan })
+  const prio = prioritas(prioritasBerita(b))
+  const pilihEvaluasi = (nama, daftar, nilai, saranMesin, labelMesin) => `
+    <select class="pilihan" name="${nama}">
+      <option value="">Ikuti saran mesin (${amankan(saranMesin)} — ${amankan(labelMesin)})</option>
+      ${daftar.map((e) => `<option value="${e.kode}"${nilai === e.kode ? ' selected' : ''}>${e.kode} — ${amankan(e.label)}</option>`).join('')}
+    </select>`
+
   const formulir = bolehCatat ? `
     <div class="saran-form" data-peran="form-tindak">
       <div class="label-mono">Catat keputusan</div>
+      <label class="saran-isian">
+        <span>Evaluasi sumber <span class="samar-teks">(SIP 2023)</span></span>
+        ${pilihEvaluasi('evaluasi_sumber', EVALUASI_SUMBER, keputusan?.evaluasi_sumber, mesinSumber, labelSumber(mesinSumber))}
+      </label>
+      <label class="saran-isian">
+        <span>Evaluasi informasi <span class="samar-teks">(SIP 2023)</span></span>
+        ${pilihEvaluasi('evaluasi_informasi', EVALUASI_INFORMASI, keputusan?.evaluasi_informasi, mesinInfo, labelInformasi(mesinInfo))}
+      </label>
       <label class="saran-isian">
         <span>Hasil verifikasi</span>
         <select class="pilihan" name="hasil">
@@ -315,6 +339,9 @@ function panelTindak(b, keadaan, media, { pesan = null } = {}) {
         <span>Catatan <span class="samar-teks">(maksimal 1000 huruf)</span></span>
         <textarea class="masukan" name="catatan" rows="3" maxlength="1000"
                   placeholder="Siapa yang dihubungi, apa yang ditemukan, apa yang akan dilakukan">${amankan(keputusan?.catatan || '')}</textarea>
+        <span class="mini-teks samar-teks">Pisahkan fakta dari pendapat, dan pastikan memuat 5W1H: siapa,
+          apa, di mana, kapan, mengapa, bagaimana. Jangan tulis nama informan atau nomor dokumen;
+          catatan ini ikut keluar di berkas ekspor dan dikaburkan hanya pada versi edaran.</span>
       </label>
       <div class="baris gap-6">
         ${tombol({ label: keputusan ? 'Perbarui keputusan' : 'Simpan keputusan', ikon: 'centang', gaya: 'utama', aksi: 'simpan-tindak' })}
@@ -336,6 +363,13 @@ function panelTindak(b, keadaan, media, { pesan = null } = {}) {
       <ul class="saran-alasan">${s.alasan.map((a) => `<li>${amankan(a)}</li>`).join('')}</ul>
       <div class="label-mono" style="margin-top:6px">Langkah yang disarankan</div>
       <ol class="saran-langkah">${s.langkah.map((l) => `<li>${amankan(l)}</li>`).join('')}</ol>
+      <div class="label-mono" style="margin-top:6px">Penilaian SIP 2023</div>
+      <p class="mini-teks" style="margin:2px 0 0">
+        Nilai <b>${amankan(ev.nilai)}</b> — sumber ${amankan(labelSumber(ev.sumber).toLowerCase())},
+        informasi ${amankan(labelInformasi(ev.informasi).toLowerCase())}
+        <span class="samar-teks">(${ev.dasar === 'analis' ? 'dinilai analis' : 'saran mesin'})</span>.
+        Prioritas <b>${amankan(prio.label)}</b>: ${amankan(prio.batas.toLowerCase())}.
+      </p>
     </div>
     ${formulir}
     <p class="mini-teks samar-teks" style="margin:8px 0 0">
@@ -380,6 +414,8 @@ function pasangTindak(isi, keadaan, b, media) {
         tindakan: bidang('tindak'),
         hasil: bidang('hasil'),
         catatan: bidang('catatan'),
+        evaluasiSumber: bidang('evaluasi_sumber'),
+        evaluasiInformasi: bidang('evaluasi_informasi'),
         oleh: keadaan.profil?.username || keadaan.profil?.full_name || 'peragaan',
       })
       segarkan({ pesan: 'Keputusan tersimpan.' })
