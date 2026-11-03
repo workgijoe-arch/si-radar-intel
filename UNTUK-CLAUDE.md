@@ -41,6 +41,13 @@ cara membangunnya, bukan pekerjaan yang tersisa:
   Karena gelaran dari `web/`, `web/vercel.json` terbaca (cek: `/README.md`
   harus 404).
 
+**Fitur tambahan khusus SI-RADAR (3 November 2026):** saran tindak lanjut per berita
+(`web/js/lib/tindak-lanjut.js`, tabel `rekomendasi_berita`, migrasi
+`20261102040000`), menu Peta Kerawanan mandiri, ekspor CSV di Laporan Berkala, dan
+Panduan dengan tutorial per fitur dan per peran. Semuanya TIDAK ada di Trans-Siber PAS.
+Akun baru di Supabase Auth otomatis berperan `news_data_operator`; naikkan perannya di
+`public.app_users` agar menu lengkap muncul.
+
 **Yang masih harus dikerjakan pengguna sendiri:** akun admin pertama
 (Supabase → Authentication → Add user, lalu naikkan perannya di
 `app_users`), dan bot Telegram baru (rahasia Edge Function
